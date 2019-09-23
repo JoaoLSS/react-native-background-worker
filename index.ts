@@ -1,1 +1,1 @@
-export { manager } from "./src"
+export { workManager, useWorker } from "./src"
