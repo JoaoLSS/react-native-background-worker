@@ -1,0 +1,48 @@
+{
+  "name": "react-native-background-worker",
+  "title": "Background Worker",
+  "version": "0.0.1",
+  "description": "Background worker that uses android WorkManager",
+  "main": "index.ts",
+  "types": "*.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/github_account/react-native-background-worker.git",
+    "baseUrl": "https://github.com/github_account/react-native-background-worker"
+  },
+  "keywords": [
+    "react-native"
+  ],
+  "author": {
+    "name": "João Lucas Silveira Silva",
+    "email": "joao.lucas.ss@hotmail.com"
+  },
+  "license": "MIT",
+  "licenseFilename": "LICENSE",
+  "readmeFilename": "README.md",
+  "peerDependencies": {
+    "react": "^16.8.1",
+    "react-native": ">=0.60.0 <1.0.x",
+    "redux": "^4.0.4",
+    "redux-persist": "^6.0.0",
+    "redux-persist-filesystem-storage": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^16.9.2",
+    "@types/react-native": "^0.60.13",
+    "@types/redux": "^3.6.0",
+    "@types/redux-persist": "^4.3.1",
+    "react": "^16.8.3",
+    "react-native": "^0.60.0"
+  },
+  "dependencies": {
+    "@types/reselect": "^2.2.0",
+    "cuid": "^2.1.6",
+    "performance-now": "^2.1.0",
+    "redux-persist-filesystem-storage": "^2.0.0",
+    "reselect": "^4.0.0"
+  }
+}

@@ -1,0 +1,1 @@
+export { manager } from "./src"
