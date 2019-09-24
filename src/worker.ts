@@ -148,6 +148,7 @@ export class Worker<P,V=never> {
 
             do {
 
+                if(__DEV__)
                 console.log(`running worker ${ this.store.name }`, { jobs: this.store.jobs, concurrency: this.options.concurrency })
 
                 const { onStart, onSuccess, onFailure, onFailed, onComplete } = this.options.callbacks
@@ -156,14 +157,16 @@ export class Worker<P,V=never> {
 
                 const workerInstances = [...Array(this.options.concurrency).keys()].map(async (instance: number) => {
 
-                    const TAG = `${ this.store.name }::${ instance }::`
+                    const log = (arg: string) => __DEV__ && console.log(
+                        new Date(now()).toISOString().split(`T`)[1]+
+                        `${ this.store.name }::${ instance }::`+arg)
 
-                    // console.log(`${ TAG } looking for a job`)
+                    log(`looking for a job`)
 
                     let job = jobs.pop()
                     if(!job) return
 
-                    // console.log(`${ TAG } initializing ${ job.id }`)
+                    log(`initializing ${ job.id }`)
 
                     const startWorkflowTime = now()
                     const workflowDuration = () => now() - startWorkflowTime
@@ -178,54 +181,54 @@ export class Worker<P,V=never> {
                     try {
                         
                         if(onStart) {
-                            // console.log(`${ TAG } onStart callback found, running it`)
+                            log(`onStart callback found, running it`)
                             try { await onStart(job) }
-                            catch(error) { console.log(`${ TAG } onStart callback throw ${ error }`) }
+                            catch(error) { log(`onStart callback throw ${ error }`) }
                         }
 
-                        // console.log(`${ TAG } running main workflow`)
+                        log(`running main workflow`)
 
                         startJobTime = now()
                         value = await this._workflow(job)
                         jobDuration = now() - startJobTime
                         result = "success"
 
-                        // console.log(`${ TAG } worflow was successful`)
+                        log(`worflow was successful`)
 
                         if(onSuccess) {
-                            // console.log(`${ TAG } onSuccess callback found, running it`)
+                            log(`onSuccess callback found, running it`)
                             try { await onSuccess(job, value) }
-                            catch(error) { console.log(`${ TAG } onSuccess callback throw ${ error }`) }
+                            catch(error) { log(`onSuccess callback throw ${ error }`) }
                         }
 
-                        // console.log(`${ TAG } archiving successful result`)
+                        log(`archiving successful result`)
                     }
                     catch(error) {
 
                         jobDuration = startJobTime ? now() - startJobTime : 0
 
-                        // console.log(`${ TAG } worflow failed`)
+                        log(`worflow failed`)
 
                         if(onFailure) {
-                            // console.log(`${ TAG } onFailure callback found, running it`)
+                            log(`onFailure callback found, running it`)
                             try { await onFailure(job, error) }
-                            catch(error) { console.log(`${ TAG } onFailure callback throw ${ error }`) }
+                            catch(error) { log(`onFailure callback throw ${ error }`) }
                         }
 
                         if(job.attempts==1 && onFailed) {
-                            // console.log(`${ TAG } onFailed callback found, running it`)
+                            log(`onFailed callback found, running it`)
                             try { await onFailed(job, error) }
-                            catch(error) { console.log(`${ TAG } onFailed callback throw ${ error }`) }
+                            catch(error) { log(`onFailed callback throw ${ error }`) }
                         }
 
-                        // console.log(`${ TAG } archiving failed result`)
+                        log(`archiving failed result`)
                     }
                     finally {
 
                         if(onComplete) {
-                            // console.log(`${ TAG } onComplete callback found, running it`)
+                            log(`onComplete callback found, running it`)
                             try { await onComplete(job) }
-                            catch(error) { console.log(`${ TAG } onComplete callback throw ${ error }`) }
+                            catch(error) { log(`onComplete callback throw ${ error }`) }
                         }
 
                         const toArchive = {
@@ -242,13 +245,12 @@ export class Worker<P,V=never> {
                                 { ...toArchive, status:"failure", error }
                         )
 
-                        if(this.options.notification.showProgress) NativeModules.BackgroundWorker.setProgress(this.id, beforeJobs.length, beforeJobs.length - this.store.jobs.length)
+                        if(this.options.notification.showProgress)
+                            NativeModules.BackgroundWorker.setProgress(this.id, beforeJobs.length, beforeJobs.length - this.store.jobs.length)
 
                     }
 
                 })
-
-                // console.log({ _jobs })
                 
                 try {
                     if(this.options.notification.cancelable) {
@@ -279,7 +281,7 @@ export class Worker<P,V=never> {
             this._status = "idle"
             this.buffer.map(func => func())
             this.store.purgeArchive(this.options.keepTime)
-            if(this.options.autoStart) this.start()
+            this.start()
         })
     }
 
@@ -343,7 +345,7 @@ export class Worker<P,V=never> {
     public withConstraints(constraints: {
         network  ?: "connected" | "metered" | "notRoaming" | "unmetered" | "notRequired",
         battery  ?: "charging" | "notLow" | "notRequired",
-        storage    ?: boolean,
+        storage  ?: boolean,
         idle     ?: boolean,
     }) {
         if(this._status==="intializing") this.buffer.push(() => this.withConstraints(constraints))
@@ -374,6 +376,11 @@ export class Worker<P,V=never> {
             priority: config && config.priority || 0,
             attempts: config && config.attempts || 1,
             enqueuedDate: new Date().getTime(),
+        })
+        if(this.options.autoStart) NativeModules.BackgroundWorker.startService(this.id, {
+            title: this.options.notification.title,
+            message: this.options.notification.message,
+            actions: Object.keys(this.options.notification.actions)
         })
         return this as unknown as Worker<_P,V>
     }

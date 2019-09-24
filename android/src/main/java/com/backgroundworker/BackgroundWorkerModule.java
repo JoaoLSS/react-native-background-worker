@@ -116,4 +116,28 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
         LocalBroadcastManager.getInstance(this.context).sendBroadcast(intent);
     }
 
+    @ReactMethod
+    public void startService(String id, ReadableMap notification) {
+
+        ReadableArray unparsedActions = notification.getArray("actions");
+
+        String[] actions = new String[unparsedActions.size()];
+
+        for (int i=0; i<unparsedActions.size();i++) {
+            actions[i] = unparsedActions.getString(i);
+            Log.d("action" + i, actions[i]);
+        }
+
+        Intent service = new Intent(this.context, BackgroundWorkerService.class);
+        service.putExtra("id", id);
+        service.putExtra("actions", actions);
+        service.putExtra("title", notification.getString("title"));
+        service.putExtra("message", notification.getString("message"));
+
+        Log.d("BackgroundWorker", "starting service " + id);
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) this.context.startForegroundService(service);
+        else this.context.startService(service);
+    }
+
 }

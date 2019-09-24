@@ -6,8 +6,6 @@ import { PersistPartial } from "redux-persist/es/persistReducer"
 import { createSelector } from "reselect"
 import { useRef } from "react"
 
-
-
 const createActions = (dispatch: Dispatch) => ({
     addWorker: (worker: { name: string, state: WorkerState }) => dispatch({ type: "ADD_WORKER" as const, worker }),
     deleteWorker: (workerName: any) => dispatch({ type: "DELETE_WORKER" as const, workerName }),
@@ -173,7 +171,3 @@ export const workManager = WorkManager.shared
 export function useWorker<P,V>(name: string): Worker<P,V> {
     return workManager.worker(name) as Worker<P,V> || workManager.addQueuedWorker(name) as Worker<P,V>
 }
-
-useWorker("seila").withWorkflow<{ name: string }>(async ({ payload }) => {
-    payload.name
-}).enqueue({ name: "seila" })
