@@ -1,1 +1,0 @@
-type EscapeArgument<T> = T extends (arg: infer R) => any ? R : T
