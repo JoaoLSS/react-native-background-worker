@@ -77,6 +77,8 @@ export class Worker<P,V=never> {
 
     private emitter = new NativeEventEmitter()
 
+    private eventType: string | undefined = undefined
+
     private cancelTask ?: () => void
 
     private _status: "intializing" | "idle" | "listening" | "running" = "intializing"
@@ -398,17 +400,23 @@ export class Worker<P,V=never> {
             (id: string) => {
             console.log(`listening at id ${ id }`)
             this._status = "listening"
-            this.emitter.addListener("react-native-background-worker-action"+id, (nAction) => this.options.notification.actions[nAction]())
+            const _eventType = "react-native-background-worker-action"+id
+            this.emitter.addListener(_eventType, this.actionsListener)
+            this.eventType = _eventType
             AppRegistry.registerHeadlessTask(id, () => this.workflow)
             this.id = id
         })
+    }
+
+    private actionsListener(action: string) {
+        this.options.notification.actions[action]()
     }
 
     private invalidate() {
         if(this._status==="intializing") this.buffer.push(() => this.invalidate())
         else if(this._status === "listening") {
             NativeModules.BackgroundWorker.cancelWorker(this.id)
-            this.emitter.removeAllListeners()
+            if(this.eventType) this.emitter.removeListener(this.eventType, this.actionsListener)
             this.id = undefined
             this._status = "idle"
         }
