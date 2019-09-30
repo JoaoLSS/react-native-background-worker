@@ -407,7 +407,7 @@ export class Worker<P,V=never> {
     private invalidate() {
         if(this._status==="intializing") this.buffer.push(() => this.invalidate())
         else if(this._status === "listening") {
-            NativeModules.BackgroundWorker.cancel(this.id)
+            NativeModules.BackgroundWorker.cancelWorker(this.id)
             this.emitter.removeAllListeners()
             this.id = undefined
             this._status = "idle"
