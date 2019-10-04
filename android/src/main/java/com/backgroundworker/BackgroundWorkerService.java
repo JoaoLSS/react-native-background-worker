@@ -12,6 +12,7 @@ import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Icon;
+import android.os.Bundle;
 import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
@@ -39,6 +40,8 @@ public class BackgroundWorkerService extends HeadlessJsTaskService {
         String id = intent.getStringExtra("id");
         String worker = intent.getStringExtra("worker");
 
+        HashMap _payload = (HashMap) intent.getSerializableExtra("payload");
+
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
 
             ReadableMap _notification = BackgroundWorkerModule.workers.get(worker).getMap("notification");
@@ -58,7 +61,7 @@ public class BackgroundWorkerService extends HeadlessJsTaskService {
 
         }
 
-        return new HeadlessJsTaskConfig(id, Arguments.fromBundle(intent.getExtras()), TimeUnit.MINUTES.toMillis(10), true);
+        return new HeadlessJsTaskConfig(id, Arguments.makeNativeMap(_payload), TimeUnit.MINUTES.toMillis(10), true);
 
     }
 
