@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Bundle;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -16,14 +17,19 @@ import androidx.work.WorkerParameters;
 import com.facebook.react.bridge.ReactApplicationContext;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import static android.os.SystemClock.sleep;
 
 public class BackgroundWorker extends Worker {
 
     final String id;
+    final HashMap payload;
+    final String worker;
 
     String result = "running";
+
 
     BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -35,6 +41,8 @@ public class BackgroundWorker extends Worker {
     public BackgroundWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
         super(context, workerParams);
         this.id = workerParams.getId().toString();
+        this.payload = (HashMap) workerParams.getInputData().getKeyValueMap();
+        this.worker = workerParams.getTags().iterator().next();
         LocalBroadcastManager.getInstance(this.getApplicationContext()).registerReceiver(this.receiver, new IntentFilter(this.id + "result"));
     }
 
@@ -42,8 +50,13 @@ public class BackgroundWorker extends Worker {
     @Override
     public Result doWork() {
 
+        Bundle extras = new Bundle();
+        extras.putSerializable("payload", this.payload);
+        extras.putString("id", this.id);
+        extras.putString("worker", this.worker);
+
         Intent headlessJS = new Intent(this.getApplicationContext(), BackgroundWorkerService.class);
-        headlessJS.putExtra("id", this.id);
+        headlessJS.putExtras(extras);
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) this.getApplicationContext().startForegroundService(headlessJS);
         else this.getApplicationContext().startService(headlessJS);
 
