@@ -51,6 +51,8 @@ public class BackgroundWorker extends Worker {
     @Override
     public Result doWork() {
 
+        if(this.payload == null || this.worker == null) return Result.failure();
+
         Bundle extras = new Bundle();
         extras.putString("payload", this.payload);
         extras.putString("id", this.id);
