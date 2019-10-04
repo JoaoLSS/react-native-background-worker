@@ -21,51 +21,39 @@ import static android.os.SystemClock.sleep;
 
 public class BackgroundWorker extends Worker {
 
-    final ReactApplicationContext reactContext;
     final String id;
-    private String result;
 
-    private Data data;
+    String result = "running";
 
-    public BackgroundWorker(@NonNull Context appContext, @NonNull WorkerParameters workerParams , ReactApplicationContext reactContext) {
-        super(appContext, workerParams);
-        this.reactContext = reactContext;
+    BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            BackgroundWorker.this.result = intent.getStringExtra("result");
+        }
+    };
+
+    public BackgroundWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
+        super(context, workerParams);
         this.id = workerParams.getId().toString();
-        this.data = workerParams.getInputData();
-
-        BroadcastReceiver receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                BackgroundWorker.this.result = intent.hasExtra("result") ? intent.getStringExtra("result") : "failure";
-            }
-        };
-
-        LocalBroadcastManager.getInstance(reactContext).registerReceiver(receiver, new IntentFilter(this.id));
+        LocalBroadcastManager.getInstance(this.getApplicationContext()).registerReceiver(this.receiver, new IntentFilter(this.id + "result"));
     }
 
     @NonNull
     @Override
     public Result doWork() {
 
-        this.result = "running";
+        Intent headlessJS = new Intent(this.getApplicationContext(), BackgroundWorkerService.class);
+        headlessJS.putExtra("id", this.id);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) this.getApplicationContext().startForegroundService(headlessJS);
+        else this.getApplicationContext().startService(headlessJS);
 
-        Intent service = new Intent(this.reactContext, BackgroundWorkerService.class);
-        service.putExtra("id", this.id);
-        service.putExtra("actions", this.data.getStringArray("actions"));
-        service.putExtra("title", this.data.getString("title"));
-        service.putExtra("message", this.data.getString("message"));
+        while(this.result.equals("running")) { sleep(100); }
 
-        Log.d("BackgroundWorker", "starting service " + this.id);
-
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) this.reactContext.startForegroundService(service);
-        else this.reactContext.startService(service);
-
-        while(this.result.equals("running")) { sleep(1000); }
-
-        switch(result) {
-            case "failure" : return Result.failure();
-            case "retry"   : return Result.retry();
-            default        : return Result.success();
+        switch (this.result) {
+            case "success": return Result.success();
+            case "retry": return Result.retry();
+            default: return Result.failure();
         }
+
     }
 }

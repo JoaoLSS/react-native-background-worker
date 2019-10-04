@@ -6,52 +6,56 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
+import android.os.Bundle;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.work.Configuration;
 import androidx.work.Constraints;
 import androidx.work.Data;
+import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.ExistingWorkPolicy;
+import androidx.work.ListenableWorker;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 import androidx.work.WorkRequest;
+import androidx.work.WorkerFactory;
+import androidx.work.WorkerParameters;
 
 import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
-    static final String TAG = "BackgroundModule";
+    static final String TAG = "RNBW";
 
-    final ReactApplicationContext context;
+    static ReactApplicationContext context;
+
+    static Map<String, WritableMap> workers = new HashMap();
+    static Map<String, WritableMap> works = new HashMap<>();
 
     public BackgroundWorkerModule(ReactApplicationContext reactContext) {
         super(reactContext);
-
-        this.context = reactContext;
-
-
-        final Configuration config = new Configuration.Builder()
-                .setWorkerFactory(new BackgroundWorkerFactory(reactContext))
-                .build();
-
-        WorkManager.initialize(reactContext, config);
-
-        WorkManager.getInstance(reactContext).cancelAllWork();
-        ActionReceiver.reactContext = reactContext;
-
+        BackgroundWorkerModule.context = reactContext;
     }
 
     @Override
@@ -60,84 +64,63 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void worker(ReadableMap _constraints, ReadableMap config, Callback sendId) {
+    public void setWorker(ReadableMap worker) {
 
-        Constraints constraints = Parser.getConstraints(_constraints);
+        String name = worker.getString("name");
+        String type = worker.getString("type");
 
-        ReadableArray unparsedActions = config.getArray("actions");
+        workers.put(name, Arguments.fromBundle(Arguments.toBundle(worker)));
 
-        String[] actions = new String[unparsedActions.size()];
+        if(type.equals("periodic")) {
 
-        for (int i=0; i<unparsedActions.size();i++) {
-            actions[i] = unparsedActions.getString(i);
-            Log.d("action" + i, actions[i]);
+            Constraints constraints = Parser.getConstraints(worker.getMap("constraints"));
+
+            PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(BackgroundWorker.class, 15, TimeUnit.MINUTES)
+                    .setConstraints(constraints)
+                    .build();
+
+            WorkManager.getInstance(context).enqueueUniquePeriodicWork(name, ExistingPeriodicWorkPolicy.REPLACE, request);
+
         }
 
-        Data data = new Data.Builder()
-                .putStringArray("actions", actions)
-                .putString("title", config.getString("title"))
-                .putString("message", config.getString("message"))
-                .build();
+    }
 
-        WorkRequest request = new PeriodicWorkRequest.Builder( BackgroundWorker.class, 15, TimeUnit.MINUTES )
+    @ReactMethod
+    public void result(String id, String result) {
+        Intent intent = new Intent(id + "result");
+        intent.putExtra("result", result);
+        LocalBroadcastManager.getInstance(this.getReactApplicationContext()).sendBroadcast(intent);
+    }
+
+    @ReactMethod
+    private void enqueue(ReadableMap work, Callback sendId) {
+
+        String worker = work.getString("worker");
+
+        Constraints constraints = Parser.getConstraints(workers.get(worker).getMap("constraints"));
+
+        WorkRequest request = new OneTimeWorkRequest.Builder(BackgroundWorker.class)
                 .setConstraints(constraints)
-                .setInputData(data)
                 .build();
 
-        sendId.invoke(request.getId().toString());
+        String id = request.getId().toString();
 
-        WorkManager.getInstance(this.context).enqueue(request);
+        works.put(id, Arguments.fromBundle(Arguments.toBundle(work)));
+
+        sendId.invoke(id);
+
+        WorkManager.getInstance(context).enqueue(request);
 
     }
 
     @ReactMethod
     public void cancelWorker(String id) {
-        WorkManager.getInstance(this.context).cancelWorkById(UUID.fromString(id));
-    }
-
-    private void set(String id, String result) {
-        Intent intent = new Intent(id);
-        intent.putExtra("result", result);
-        LocalBroadcastManager.getInstance(this.context).sendBroadcast(intent);
+        UUID _id = UUID.fromString(id);
+        WorkManager.getInstance(context).cancelWorkById(_id);
     }
 
     @ReactMethod
-    public void success(String id) { this.set(id, "success"); }
-
-    @ReactMethod
-    public void failure(String id) { this.set(id, "failure"); }
-
-    @ReactMethod
-    public void setProgress(String id, int max, int progress) {
-        Log.d("setting progress", "id " + id + " max " + max + " progress " + progress);
-        Intent intent = new Intent("react-native-background-worker-progress"+id);
-        intent.putExtra("max", max);
-        intent.putExtra("progress", progress);
-        LocalBroadcastManager.getInstance(this.context).sendBroadcast(intent);
-    }
-
-    @ReactMethod
-    public void startService(String id, ReadableMap notification) {
-
-        ReadableArray unparsedActions = notification.getArray("actions");
-
-        String[] actions = new String[unparsedActions.size()];
-
-        for (int i=0; i<unparsedActions.size();i++) {
-            actions[i] = unparsedActions.getString(i);
-            Log.d("action" + i, actions[i]);
-        }
-
-        Intent service = new Intent(this.context, BackgroundWorkerService.class);
-        service.putExtra("id", id);
-        service.putExtra("actions", actions);
-        service.putExtra("title", notification.getString("title"));
-        service.putExtra("message", notification.getString("message"));
-
-        Log.d("BackgroundWorker", "starting service " + id);
-
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) this.context.startForegroundService(service);
-        else this.context.startService(service);
+    public void workInfo(String id, Promise sendInfo) {
     }
 
 }

@@ -10,7 +10,6 @@
             android:enabled="false"
             android:exported="false" />
         <service android:name=".BackgroundWorkerService"/>
-        <receiver android:name=".ActionReceiver"/>
     </application>
 
 </manifest>

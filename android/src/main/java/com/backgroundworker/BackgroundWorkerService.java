@@ -19,6 +19,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.facebook.react.HeadlessJsTaskService;
 import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.jstasks.HeadlessJsTaskConfig;
 
@@ -31,92 +32,34 @@ import javax.annotation.Nullable;
 
 public class BackgroundWorkerService extends HeadlessJsTaskService {
 
-    private BroadcastReceiver progressReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            int max = intent.getIntExtra("max", 0);
-            int progress = intent.getIntExtra("progress", 0);
-            Log.d("setting progress", "max " + max + " progress " + progress);
-            BackgroundWorkerService.this.builder.setProgress(max, progress, false);
-            BackgroundWorkerService.this.startForeground(123456789, BackgroundWorkerService.this.builder.build());
-        }
-    };
-
-    @TargetApi(26)
-    private Notification.Builder builder;
-
     @Nullable
     @Override
     protected HeadlessJsTaskConfig getTaskConfig(Intent intent) {
 
         String id = intent.getStringExtra("id");
+        String worker = BackgroundWorkerModule.works.get(id).getString("worker");
 
-        Log.d("BackgroundWorker", "starting service " + id);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
 
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O){
+            ReadableMap _notification = BackgroundWorkerModule.workers.get(worker).getMap("notification");
 
-            String[] actions = intent.getStringArrayExtra("actions");
+            NotificationChannel channel = new NotificationChannel(worker, worker, NotificationManager.IMPORTANCE_MIN);
+            NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            notificationManager.createNotificationChannel(channel);
 
-            String title = intent.getStringExtra("title");
-            String message = intent.getStringExtra("message");
+            Notification notification = new Notification.Builder(this, worker)
+                    .setContentTitle(_notification.getString("title"))
+                    .setContentText(_notification.getString("text"))
+                    .setWhen(System.currentTimeMillis())
+                    .setSmallIcon(R.drawable.ic_notification)
+                    .build();
 
-            Notification.Action[] actionsObj = new Notification.Action[actions.length];
+            startForeground(123456789, notification);
 
-            for(int i=0;i<actions.length;i++) {
-
-                Intent someIntent = new Intent(actions[i]);
-
-                someIntent.setClass(ActionReceiver.reactContext, ActionReceiver.class);
-
-                Log.d("creating action " + i + " for worker " + id, actions[i]);
-
-                someIntent.putExtra("action", actions[i]);
-                someIntent.putExtra("id", id);
-
-                PendingIntent somePendingIntent = PendingIntent.getBroadcast(getApplicationContext(), 1000, someIntent, PendingIntent.FLAG_CANCEL_CURRENT);
-
-                Notification.Action someAction = new Notification.Action.Builder(null, actions[i], somePendingIntent).build();
-
-                actionsObj[i] = someAction;
-            }
-
-            Log.d("listening to progress", id);
-
-            LocalBroadcastManager.getInstance(ActionReceiver.reactContext).registerReceiver(this.progressReceiver, new IntentFilter("react-native-background-worker-progress"+id));
-
-            createChannel();
-            startForeground(123456789, createNotification(title, message, actionsObj));
         }
 
-        return new HeadlessJsTaskConfig(id, null, TimeUnit.MINUTES.toMillis(10), true);
+        return new HeadlessJsTaskConfig(id, BackgroundWorkerModule.works.get(id), TimeUnit.MINUTES.toMillis(10), true);
 
-    }
-
-    @TargetApi(26)
-    private Notification createNotification(String title, String message, Notification.Action[] actions) {
-
-        Intent onClick = new Intent("clicked");
-        PendingIntent contentIntent = PendingIntent.getBroadcast(this, 1000, onClick, 0);
-
-        if(this.builder==null) this.builder = new Notification.Builder(this, "background");
-
-        this.builder
-                .setContentTitle(title)
-                .setContentText(message)
-                .setWhen(System.currentTimeMillis())
-                .setSmallIcon(R.drawable.ic_notification)
-                .setContentIntent(contentIntent);
-
-        for(int i=0;i<actions.length;i++) builder.addAction(actions[i]);
-
-        return builder.build();
-    }
-
-    @TargetApi(26)
-    private void createChannel() {
-        NotificationChannel channel = new NotificationChannel("background", "background services", NotificationManager.IMPORTANCE_MIN);
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.createNotificationChannel(channel);
     }
 
 }

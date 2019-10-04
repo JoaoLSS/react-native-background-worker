@@ -8,6 +8,8 @@ import androidx.work.NetworkType;
 
 import com.facebook.react.bridge.ReadableMap;
 
+import javax.annotation.Nullable;
+
 public class Parser {
 
     static private NetworkType getNetworkType(String networkType) {
@@ -22,7 +24,9 @@ public class Parser {
 
     }
 
-    static public Constraints getConstraints(ReadableMap constraints) {
+    static public Constraints getConstraints(@Nullable  ReadableMap constraints) {
+
+        if(constraints==null) return null;
 
         final NetworkType networkType = getNetworkType(constraints.hasKey("network") ? constraints.getString("network") : "notRequired");
 
