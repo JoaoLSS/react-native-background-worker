@@ -1,4 +1,6 @@
+import React from "react"
 import { NativeModules, AppRegistry } from "react-native"
+import { WebView, WebViewProps } from "react-native-webview"
 
 export const setWorker = (worker: {
     type: "queued" | "periodic",
@@ -22,7 +24,7 @@ export const setWorker = (worker: {
     AppRegistry.registerHeadlessTask(worker.name, () => async ({ payload, id }) => {
 
         try {
-            const result = await workflow(payload)
+            const result = await workflow(JSON.parse(payload))
             NativeModules.BackgroundWorker.result(id, result)
         }
         catch(error) {
@@ -35,7 +37,8 @@ export const setWorker = (worker: {
 export const enqueue = (work: {
     worker: string,
     payload: any,
-}) => new Promise((resolve) => NativeModules.BackgroundWorker.enqueue(work, resolve)) as Promise<string>
+}) => new Promise((resolve) => NativeModules.BackgroundWorker
+    .enqueue({ worker: work.worker, payload: JSON.stringify(work.payload) }, resolve)) as Promise<string>
 
 export const cancelWork = (id: string) => NativeModules.BackgroundWorker.cancelWork(id)
 

@@ -95,14 +95,18 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
     private void enqueue(ReadableMap work, Callback sendId) {
 
         String worker = work.getString("worker");
-        Map payload = work.getMap("payload").toHashMap();
+        String payload = work.getString("payload");
+
+        Data inputData = new Data.Builder()
+                .putString("worker", worker)
+                .putString("payload", payload)
+                .build();
 
         Constraints constraints = Parser.getConstraints(workers.get(worker).getMap("constraints"));
 
         WorkRequest request = new OneTimeWorkRequest.Builder(BackgroundWorker.class)
                 .setConstraints(constraints)
-                .setInputData(new Data.Builder().putAll(payload).build())
-                .addTag(worker)
+                .setInputData(inputData)
                 .build();
 
         String id = request.getId().toString();

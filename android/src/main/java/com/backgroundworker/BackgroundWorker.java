@@ -25,7 +25,7 @@ import static android.os.SystemClock.sleep;
 public class BackgroundWorker extends Worker {
 
     final String id;
-    final HashMap payload = new HashMap();
+    final String payload;
     final String worker;
 
     String result = "running";
@@ -41,8 +41,9 @@ public class BackgroundWorker extends Worker {
     public BackgroundWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
         super(context, workerParams);
         this.id = workerParams.getId().toString();
-        this.payload.putAll(workerParams.getInputData().getKeyValueMap());
-        this.worker = workerParams.getTags().iterator().next();
+        Data inputData = workerParams.getInputData();
+        this.worker = inputData.getString("worker");
+        this.payload = inputData.getString("payload");
         LocalBroadcastManager.getInstance(this.getApplicationContext()).registerReceiver(this.receiver, new IntentFilter(this.id + "result"));
     }
 
@@ -51,7 +52,7 @@ public class BackgroundWorker extends Worker {
     public Result doWork() {
 
         Bundle extras = new Bundle();
-        extras.putSerializable("payload", this.payload);
+        extras.putString("payload", this.payload);
         extras.putString("id", this.id);
         extras.putString("worker", this.worker);
 

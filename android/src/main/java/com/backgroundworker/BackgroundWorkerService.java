@@ -37,10 +37,7 @@ public class BackgroundWorkerService extends HeadlessJsTaskService {
     @Override
     protected HeadlessJsTaskConfig getTaskConfig(Intent intent) {
 
-        String id = intent.getStringExtra("id");
         String worker = intent.getStringExtra("worker");
-
-        HashMap _payload = (HashMap) intent.getSerializableExtra("payload");
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
 
@@ -61,7 +58,7 @@ public class BackgroundWorkerService extends HeadlessJsTaskService {
 
         }
 
-        return new HeadlessJsTaskConfig(worker, null, TimeUnit.MINUTES.toMillis(10), true);
+        return new HeadlessJsTaskConfig(worker, Arguments.fromBundle(intent.getExtras()), TimeUnit.MINUTES.toMillis(10), true);
 
     }
 
