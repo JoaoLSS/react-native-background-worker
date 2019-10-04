@@ -25,7 +25,7 @@ import static android.os.SystemClock.sleep;
 public class BackgroundWorker extends Worker {
 
     final String id;
-    final HashMap payload;
+    final HashMap payload = new HashMap();
     final String worker;
 
     String result = "running";
@@ -41,7 +41,7 @@ public class BackgroundWorker extends Worker {
     public BackgroundWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
         super(context, workerParams);
         this.id = workerParams.getId().toString();
-        this.payload = (HashMap) workerParams.getInputData().getKeyValueMap();
+        this.payload.putAll(workerParams.getInputData().getKeyValueMap());
         this.worker = workerParams.getTags().iterator().next();
         LocalBroadcastManager.getInstance(this.getApplicationContext()).registerReceiver(this.receiver, new IntentFilter(this.id + "result"));
     }
