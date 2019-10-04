@@ -61,7 +61,7 @@ public class BackgroundWorkerService extends HeadlessJsTaskService {
 
         }
 
-        return new HeadlessJsTaskConfig(id, null, TimeUnit.MINUTES.toMillis(10), true);
+        return new HeadlessJsTaskConfig(worker, null, TimeUnit.MINUTES.toMillis(10), true);
 
     }
 
