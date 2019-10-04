@@ -1,6 +1,4 @@
-import React from "react"
 import { NativeModules, AppRegistry } from "react-native"
-import { WebView, WebViewProps } from "react-native-webview"
 
 export const setWorker = (worker: {
     type: "queued" | "periodic",
