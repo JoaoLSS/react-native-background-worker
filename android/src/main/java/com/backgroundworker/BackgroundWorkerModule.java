@@ -41,6 +41,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -50,7 +51,7 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
     static ReactApplicationContext context;
 
-    static Map<String, WritableMap> workers = new HashMap();
+    private HashMap<String, ReadableMap> workers = new HashMap<>();
 
     public BackgroundWorkerModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -68,15 +69,16 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
         String name = worker.getString("name");
         String type = worker.getString("type");
 
-        workers.put(name, Arguments.fromBundle(Arguments.toBundle(worker)));
+        this.workers.put(name, worker);
 
-        if(type.equals("periodic")) {
+        if(type != null && name != null && type.equals("periodic")) {
 
             Constraints constraints = Parser.getConstraints(worker.getMap("constraints"));
 
-            PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(BackgroundWorker.class, 15, TimeUnit.MINUTES)
-                    .setConstraints(constraints)
-                    .build();
+            PeriodicWorkRequest.Builder builder = new PeriodicWorkRequest.Builder(BackgroundWorker.class, 15, TimeUnit.MINUTES);
+            if(constraints != null ) builder.setConstraints(constraints);
+
+            PeriodicWorkRequest request = builder.build();
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(name, ExistingPeriodicWorkPolicy.REPLACE, request);
 
@@ -94,25 +96,33 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
     @ReactMethod
     private void enqueue(ReadableMap work, Callback sendId) {
 
+
         String worker = work.getString("worker");
         String payload = work.getString("payload");
+
+        ReadableMap _worker = workers.get(worker);
+
+        if(_worker==null) return;
+
+        String title = _worker.getString("title");
+        String text = _worker.getString("text");
 
         Data inputData = new Data.Builder()
                 .putString("worker", worker)
                 .putString("payload", payload)
+                .putString("title", title)
+                .putString("text", text)
                 .build();
 
-        Constraints constraints = Parser.getConstraints(workers.get(worker).getMap("constraints"));
+        Constraints constraints = Parser.getConstraints(_worker.getMap("constraints"));
+        WorkRequest.Builder builder = new OneTimeWorkRequest.Builder(BackgroundWorker.class)
+                .setInputData(inputData);
 
-        WorkRequest request = new OneTimeWorkRequest.Builder(BackgroundWorker.class)
-                .setConstraints(constraints)
-                .setInputData(inputData)
-                .build();
+        if(constraints!=null) builder.setConstraints(constraints);
 
+        WorkRequest request = builder.build();
         String id = request.getId().toString();
-
         sendId.invoke(id);
-
         WorkManager.getInstance(context).enqueue(request);
 
     }

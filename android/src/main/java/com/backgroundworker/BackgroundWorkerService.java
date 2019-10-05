@@ -27,6 +27,7 @@ import com.facebook.react.jstasks.HeadlessJsTaskConfig;
 import java.sql.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
@@ -42,34 +43,24 @@ public class BackgroundWorkerService extends HeadlessJsTaskService {
         HeadlessJsTaskConfig config = null;
 
         String worker = intent.getStringExtra("worker");
+        String payload = intent.getStringExtra("payload");
+        String title = intent.getStringExtra("title");
+        String text = intent.getStringExtra("text");
 
         Log.d(TAG, "WORKER: " + worker);
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
 
-            assert BackgroundWorkerModule.workers.get(worker) != null;
-            ReadableMap _notification = BackgroundWorkerModule.workers.get(worker).getMap("notification");
-
             NotificationChannel channel = new NotificationChannel(worker, worker, NotificationManager.IMPORTANCE_MIN);
             NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             notificationManager.createNotificationChannel(channel);
 
-            assert _notification != null;
-            String title = _notification.getString("title");
-            String text = _notification.getString("text");
-
-            Log.d(TAG, "TITLE :" + title);
-            Log.d(TAG, "TEXT: " + text);
-
-            Notification.Builder builder = new Notification.Builder(this, worker)
+            Notification notification = new Notification.Builder(this, worker)
                     .setWhen(System.currentTimeMillis())
-                    .setSmallIcon(R.drawable.ic_notification);
-
-            if(title!=null && text!= null) {
-                builder.setContentTitle(title).setContentText(text);
-            }
-
-            Notification notification = builder.build();
+                    .setContentText(text)
+                    .setContentTitle(title)
+                    .setSmallIcon(R.drawable.ic_notification)
+                    .build();
 
             startForeground(123456789, notification);
 
