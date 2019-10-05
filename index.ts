@@ -38,6 +38,6 @@ export const enqueue = (work: {
 }) => new Promise((resolve) => NativeModules.BackgroundWorker
     .enqueue({ worker: work.worker, payload: JSON.stringify(work.payload) }, resolve)) as Promise<string>
 
-export const cancelWork = (id: string) => NativeModules.BackgroundWorker.cancelWork(id)
+export const cancelWork = (id: string) => NativeModules.BackgroundWorker.cancelWorker(id)
 
 export const workInfo = (id: string) => new Promise((resolve) => NativeModules.BackgroundWorker.workInfo(id, resolve))
