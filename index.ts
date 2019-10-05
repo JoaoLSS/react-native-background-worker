@@ -33,7 +33,7 @@ export const setWorker = (worker: {
 
     register()
     AppState.addEventListener("change", (state) => {
-        console.log({ state })
+        console.log("BACKGROUND_RESSURGANCE", { state })
         state === "active" && register()
     })
 }

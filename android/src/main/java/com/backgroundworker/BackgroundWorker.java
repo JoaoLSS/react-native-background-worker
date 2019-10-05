@@ -53,7 +53,10 @@ public class BackgroundWorker extends Worker {
     @Override
     public Result doWork() {
 
-        if(BackgroundWorkerModule.IS_DESTRUCTED) return Result.retry();
+        if(BackgroundWorkerModule.IS_DESTRUCTED) {
+            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(new Intent("WAKE-UP"));
+            return Result.retry();
+        }
 
         if(this.payload == null || this.worker == null) return Result.failure();
 

@@ -53,6 +53,14 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
     static ReactApplicationContext context;
 
+    private BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            BackgroundWorkerModule.this.getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                    .emit("WAKE-UP", null);
+        }
+    };
+
     private HashMap<String, ReadableMap> workers = new HashMap<>();
 
     public BackgroundWorkerModule(ReactApplicationContext reactContext) {
