@@ -18,8 +18,6 @@ export const setWorker = (worker: {
     
     const { workflow, ..._worker } = worker
 
-    NativeModules.BackgroundWorker.setWorker(_worker)
-
     const work = async (id: string, payload: string) => {
         try {
             const result = await workflow(JSON.parse(payload))
@@ -47,6 +45,8 @@ export const setWorker = (worker: {
         }
 
     })
+
+    NativeModules.BackgroundWorker.setWorker(_worker)
 
     // const register = () => AppRegistry.registerHeadlessTask(worker.name, () => async ({ payload, id }) => {
 
