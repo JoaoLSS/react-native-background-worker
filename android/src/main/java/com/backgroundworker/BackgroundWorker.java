@@ -53,10 +53,7 @@ public class BackgroundWorker extends Worker {
     @Override
     public Result doWork() {
 
-        if(BackgroundWorkerModule.IS_DESTRUCTED) {
-            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(new Intent("WAKE-UP"));
-            return Result.retry();
-        }
+        if(BackgroundWorkerModule.IS_DESTRUCTED) return Result.retry();
 
         if(this.payload == null || this.worker == null) return Result.failure();
 
@@ -65,14 +62,11 @@ public class BackgroundWorker extends Worker {
         extras.putString("id", this.id);
         extras.putString("worker", this.worker);
 
-        Log.d(TAG, "payload: " + payload);
-        Log.d(TAG, "id: " + id);
-        Log.d(TAG, "worker: " + worker);
+        Intent broadcast = new Intent("DO_WORK");
 
-        Intent headlessJS = new Intent(this.getApplicationContext(), BackgroundWorkerService.class);
-        headlessJS.putExtras(extras);
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) this.getApplicationContext().startForegroundService(headlessJS);
-        else this.getApplicationContext().startService(headlessJS);
+        broadcast.putExtras(extras);
+
+        LocalBroadcastManager.getInstance(this.getApplicationContext()).sendBroadcast(broadcast);
 
         while(this.result.equals("running")) { sleep(100); }
 

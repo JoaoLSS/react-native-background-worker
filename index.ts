@@ -19,8 +19,8 @@ export const setWorker = (worker: {
     const { workflow, ..._worker } = worker
 
     NativeModules.BackgroundWorker.setWorker(_worker)
-    const register = () => AppRegistry.registerHeadlessTask(worker.name, () => async ({ payload, id }) => {
 
+    const work = async (id: string, payload: string) => {
         try {
             const result = await workflow(JSON.parse(payload))
             NativeModules.BackgroundWorker.result(id, result)
@@ -28,15 +28,44 @@ export const setWorker = (worker: {
         catch(error) {
             NativeModules.BackgroundWorker.result(id, "failure")
         }
+    }
+
+    AppRegistry.registerHeadlessTask(worker.name, () => async ({ payload, id }) => {
+        console.log(`STARTING HEADLESS JS`)
+        await work(id, payload)
+    })
+
+    NativeAppEventEmitter.addListener(worker.name, ({ id, payload }) => {
+
+        if(AppState.currentState==="active") {
+            console.log(`RUNNING IN FOREGROUND`)
+            work(id, payload)
+        }
+        else {
+            console.log(`CALLING HEADLESS JS`)
+            NativeModules.BackgroundWorker.startHeadlessJS({ worker: worker.name, payload, id })
+        }
 
     })
 
-    register()
-    AppState.addEventListener("change", (state) => {
-        console.log("BACKGROUND_RESSURGANCE", { state })
-        state === "active" && register()
-    })
-    NativeAppEventEmitter.addListener("WAKE-UP", () => console.log("WAKE-UP"))
+    // const register = () => AppRegistry.registerHeadlessTask(worker.name, () => async ({ payload, id }) => {
+
+    //     try {
+    //         const result = await workflow(JSON.parse(payload))
+    //         NativeModules.BackgroundWorker.result(id, result)
+    //     }
+    //     catch(error) {
+    //         NativeModules.BackgroundWorker.result(id, "failure")
+    //     }
+
+    // // })
+
+    // register()
+    // AppState.addEventListener("change", (state) => {
+    //     console.log("BACKGROUND_RESSURGANCE", { state })
+    //     state === "active" && register()
+    // })
+    // NativeAppEventEmitter.addListener("WAKE-UP", () => console.log("WAKE-UP"))
 }
 
 export const enqueue = (work: {

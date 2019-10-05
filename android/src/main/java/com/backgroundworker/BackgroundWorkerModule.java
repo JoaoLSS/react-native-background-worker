@@ -56,9 +56,18 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
     private BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.d(TAG,"INVOKING REACT FROM THE DEADE");
+
+            String worker = intent.getStringExtra("worker");
+            String id = intent.getStringExtra("id");
+            String payload = intent.getStringExtra("payload");
+
+            Bundle extras = new Bundle();
+
+            extras.putString("id", id);
+            extras.putString("payload", payload);
+
             BackgroundWorkerModule.this.getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                    .emit("WAKE-UP", null);
+                    .emit(worker, Arguments.fromBundle(extras));
         }
     };
 
@@ -66,9 +75,8 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
     public BackgroundWorkerModule(ReactApplicationContext reactContext) {
         super(reactContext);
-        IS_DESTRUCTED = false;
         BackgroundWorkerModule.context = reactContext;
-        LocalBroadcastManager.getInstance(getReactApplicationContext()).registerReceiver(this.receiver, new IntentFilter("WAKE-UP"));
+        LocalBroadcastManager.getInstance(getReactApplicationContext()).registerReceiver(this.receiver, new IntentFilter("DO-WORK"));
     }
 
     @Override
@@ -78,6 +86,8 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void setWorker(ReadableMap worker) {
+
+        IS_DESTRUCTED = false;
 
         String name = worker.getString("name");
         String type = worker.getString("type");
@@ -147,6 +157,23 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void workInfo(String id, Promise sendInfo) {
+    }
+
+    @ReactMethod
+    public void startHeadlessJS(ReadableMap work) {
+
+        String id = work.getString("id");
+        String worker = work.getString("worker");
+        String payload = work.getString("payload");
+
+        Intent headlessJS = new Intent(BackgroundWorkerModule.this.getReactApplicationContext(), BackgroundWorkerService.class);
+
+        headlessJS.putExtra("id", id);
+        headlessJS.putExtra("worker", worker);
+        headlessJS.putExtra("payload", payload);
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) BackgroundWorkerModule.this.getReactApplicationContext().startForegroundService(headlessJS);
+        else BackgroundWorkerModule.this.getReactApplicationContext().startService(headlessJS);
     }
 
 }
