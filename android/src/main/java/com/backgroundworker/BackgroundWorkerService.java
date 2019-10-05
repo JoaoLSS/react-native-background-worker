@@ -38,8 +38,13 @@ public class BackgroundWorkerService extends HeadlessJsTaskService {
     protected HeadlessJsTaskConfig getTaskConfig(Intent intent) {
 
         String worker = intent.getStringExtra("worker");
+        String payload = intent.getStringExtra("payload");
+
+        if(worker == null || payload == null) return null;
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+
+            if(BackgroundWorkerModule.workers.get(worker)==null) return null;
 
             ReadableMap _notification = BackgroundWorkerModule.workers.get(worker).getMap("notification");
 
@@ -47,9 +52,14 @@ public class BackgroundWorkerService extends HeadlessJsTaskService {
             NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             notificationManager.createNotificationChannel(channel);
 
+            String title = _notification.getString("title");
+            String text = _notification.getString("text");
+
+            if(title==null || text==null) return null;
+
             Notification notification = new Notification.Builder(this, worker)
-                    .setContentTitle(_notification.getString("title"))
-                    .setContentText(_notification.getString("text"))
+                    .setContentTitle(title)
+                    .setContentText(text)
                     .setWhen(System.currentTimeMillis())
                     .setSmallIcon(R.drawable.ic_notification)
                     .build();
