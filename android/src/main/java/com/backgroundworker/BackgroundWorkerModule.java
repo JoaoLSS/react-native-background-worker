@@ -96,7 +96,6 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
     @ReactMethod
     private void enqueue(ReadableMap work, Callback sendId) {
 
-
         String worker = work.getString("worker");
         String payload = work.getString("payload");
 

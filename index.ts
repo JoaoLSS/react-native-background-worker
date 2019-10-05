@@ -1,4 +1,4 @@
-import { NativeModules, AppRegistry } from "react-native"
+import { NativeModules, AppRegistry, AppState } from "react-native"
 
 export const setWorker = (worker: {
     type: "queued" | "periodic",
@@ -19,7 +19,7 @@ export const setWorker = (worker: {
     const { workflow, ..._worker } = worker
 
     NativeModules.BackgroundWorker.setWorker(_worker)
-    AppRegistry.registerHeadlessTask(worker.name, () => async ({ payload, id }) => {
+    const register = () => AppRegistry.registerHeadlessTask(worker.name, () => async ({ payload, id }) => {
 
         try {
             const result = await workflow(JSON.parse(payload))
@@ -30,6 +30,9 @@ export const setWorker = (worker: {
         }
 
     })
+
+    register()
+    AppState.addEventListener("change", (state) => state === "active" && register())
 }
 
 export const enqueue = (work: {
