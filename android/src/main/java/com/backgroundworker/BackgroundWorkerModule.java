@@ -104,14 +104,14 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
         if(_worker==null) return;
 
-        String title = _worker.getString("title");
-        String text = _worker.getString("text");
+        ReadableMap notification = _worker.getMap("notification");
 
+        assert notification != null;
         Data inputData = new Data.Builder()
                 .putString("worker", worker)
                 .putString("payload", payload)
-                .putString("title", title)
-                .putString("text", text)
+                .putString("title", notification.getString("title"))
+                .putString("text", notification.getString("text"))
                 .build();
 
         Constraints constraints = Parser.getConstraints(_worker.getMap("constraints"));
