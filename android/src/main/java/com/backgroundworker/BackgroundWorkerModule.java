@@ -57,6 +57,8 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
         @Override
         public void onReceive(Context context, Intent intent) {
 
+            Log.d(TAG, "sending event to JS");
+
             String worker = intent.getStringExtra("worker");
             String id = intent.getStringExtra("id");
             String payload = intent.getStringExtra("payload");
@@ -161,6 +163,8 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void startHeadlessJS(ReadableMap work) {
+
+        Log.d(TAG, "starting Headless JS");
 
         String id = work.getString("id");
         String worker = work.getString("worker");

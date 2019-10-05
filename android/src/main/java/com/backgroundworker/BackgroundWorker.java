@@ -53,6 +53,8 @@ public class BackgroundWorker extends Worker {
     @Override
     public Result doWork() {
 
+        Log.d(TAG, "doing Work");
+
         if(BackgroundWorkerModule.IS_DESTRUCTED) return Result.retry();
 
         if(this.payload == null || this.worker == null) return Result.failure();
