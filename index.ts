@@ -32,7 +32,10 @@ export const setWorker = (worker: {
     })
 
     register()
-    AppState.addEventListener("change", (state) => state === "active" && register())
+    AppState.addEventListener("change", (state) => {
+        console.log({ state })
+        state === "active" && register()
+    })
 }
 
 export const enqueue = (work: {
