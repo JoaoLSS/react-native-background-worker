@@ -67,6 +67,7 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
         super(reactContext);
         IS_DESTRUCTED = false;
         BackgroundWorkerModule.context = reactContext;
+        LocalBroadcastManager.getInstance(getReactApplicationContext()).registerReceiver(this.receiver, new IntentFilter("WAKE-UP"));
     }
 
     @Override
