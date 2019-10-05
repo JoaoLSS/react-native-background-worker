@@ -47,6 +47,8 @@ import java.util.concurrent.TimeUnit;
 
 public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
+    static boolean IS_DESTRUCTED = true;
+
     static final String TAG = "RNBW";
 
     static ReactApplicationContext context;
@@ -55,6 +57,7 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
     public BackgroundWorkerModule(ReactApplicationContext reactContext) {
         super(reactContext);
+        IS_DESTRUCTED = false;
         BackgroundWorkerModule.context = reactContext;
     }
 

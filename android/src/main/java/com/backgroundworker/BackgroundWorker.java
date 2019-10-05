@@ -53,6 +53,8 @@ public class BackgroundWorker extends Worker {
     @Override
     public Result doWork() {
 
+        if(BackgroundWorkerModule.IS_DESTRUCTED) return Result.retry();
+
         if(this.payload == null || this.worker == null) return Result.failure();
 
         Bundle extras = new Bundle();
