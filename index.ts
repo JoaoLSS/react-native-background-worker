@@ -1,4 +1,4 @@
-import { NativeModules, AppRegistry, AppState } from "react-native"
+import { NativeModules, AppRegistry, AppState, NativeAppEventEmitter } from "react-native"
 
 export const setWorker = (worker: {
     type: "queued" | "periodic",
@@ -36,6 +36,7 @@ export const setWorker = (worker: {
         console.log("BACKGROUND_RESSURGANCE", { state })
         state === "active" && register()
     })
+    NativeAppEventEmitter.addListener("WAKE-UP", () => console.log("WAKE-UP"))
 }
 
 export const enqueue = (work: {

@@ -56,6 +56,7 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
     private BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            Log.d(TAG,"INVOKING REACT FROM THE DEADE");
             BackgroundWorkerModule.this.getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                     .emit("WAKE-UP", null);
         }
