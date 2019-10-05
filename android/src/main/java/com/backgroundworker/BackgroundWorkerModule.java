@@ -47,11 +47,9 @@ import java.util.concurrent.TimeUnit;
 
 public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
-    static boolean IS_DESTRUCTED = true;
+    static ReactApplicationContext context;
 
     static final String TAG = "RNBW";
-
-    static ReactApplicationContext context;
 
     private BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -78,7 +76,7 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
     public BackgroundWorkerModule(ReactApplicationContext reactContext) {
         super(reactContext);
         BackgroundWorkerModule.context = reactContext;
-        LocalBroadcastManager.getInstance(getReactApplicationContext()).registerReceiver(this.receiver, new IntentFilter("DO-WORK"));
+        LocalBroadcastManager.getInstance(context).registerReceiver(this.receiver, new IntentFilter("DO-WORK"));
     }
 
     @Override
@@ -88,8 +86,6 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void setWorker(ReadableMap worker) {
-
-        IS_DESTRUCTED = false;
 
         String name = worker.getString("name");
         String type = worker.getString("type");

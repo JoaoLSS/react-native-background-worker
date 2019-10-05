@@ -55,7 +55,7 @@ public class BackgroundWorker extends Worker {
 
         Log.d(TAG, "doing Work");
 
-        if(BackgroundWorkerModule.IS_DESTRUCTED) return Result.retry();
+        if(BackgroundWorkerModule.context == null) return Result.retry();
 
         if(this.payload == null || this.worker == null) return Result.failure();
 
@@ -68,7 +68,7 @@ public class BackgroundWorker extends Worker {
 
         broadcast.putExtras(extras);
 
-        LocalBroadcastManager.getInstance(this.getApplicationContext()).sendBroadcast(broadcast);
+        LocalBroadcastManager.getInstance(BackgroundWorkerModule.context).sendBroadcast(broadcast);
 
         while(this.result.equals("running")) { sleep(100); }
 
