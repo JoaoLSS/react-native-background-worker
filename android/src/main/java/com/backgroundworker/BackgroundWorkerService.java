@@ -33,6 +33,8 @@ import javax.annotation.Nullable;
 
 public class BackgroundWorkerService extends HeadlessJsTaskService {
 
+    static String TAG = "BG_SERVICE::";
+
     @Nullable
     @Override
     protected HeadlessJsTaskConfig getTaskConfig(Intent intent) {
@@ -40,6 +42,8 @@ public class BackgroundWorkerService extends HeadlessJsTaskService {
         HeadlessJsTaskConfig config = null;
 
         String worker = intent.getStringExtra("worker");
+
+        Log.d(TAG, "WORKER: " + worker);
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
 
@@ -53,6 +57,9 @@ public class BackgroundWorkerService extends HeadlessJsTaskService {
             assert _notification != null;
             String title = _notification.getString("title");
             String text = _notification.getString("text");
+
+            Log.d(TAG, "TITLE :" + title);
+            Log.d(TAG, "TEXT: " + text);
 
             Notification.Builder builder = new Notification.Builder(this, worker)
                     .setWhen(System.currentTimeMillis())

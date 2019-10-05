@@ -24,6 +24,8 @@ import static android.os.SystemClock.sleep;
 
 public class BackgroundWorker extends Worker {
 
+    static String TAG = "BG_WORKER::";
+
     final String id;
     final String payload;
     final String worker;
@@ -57,6 +59,10 @@ public class BackgroundWorker extends Worker {
         extras.putString("payload", this.payload);
         extras.putString("id", this.id);
         extras.putString("worker", this.worker);
+
+        Log.d(TAG, "payload: " + payload);
+        Log.d(TAG, "id: " + id);
+        Log.d(TAG, "worker: " + worker);
 
         Intent headlessJS = new Intent(this.getApplicationContext(), BackgroundWorkerService.class);
         headlessJS.putExtras(extras);
