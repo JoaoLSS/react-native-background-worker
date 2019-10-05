@@ -14,7 +14,9 @@ import androidx.work.Data;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
+import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -68,7 +70,10 @@ public class BackgroundWorker extends Worker {
 
         broadcast.putExtras(extras);
 
-        LocalBroadcastManager.getInstance(BackgroundWorkerModule.context).sendBroadcast(broadcast);
+        BackgroundWorkerModule.context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                .emit(worker, Arguments.fromBundle(extras));
+
+//        LocalBroadcastManager.getInstance(BackgroundWorkerModule.context).sendBroadcast(broadcast);
 
         while(this.result.equals("running")) { sleep(100); }
 
