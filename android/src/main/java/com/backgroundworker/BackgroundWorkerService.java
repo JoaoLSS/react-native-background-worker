@@ -40,7 +40,6 @@ public class BackgroundWorkerService extends HeadlessJsTaskService {
         HeadlessJsTaskConfig config = null;
 
         String worker = intent.getStringExtra("worker");
-        String payload = intent.getStringExtra("payload");
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
 
@@ -55,20 +54,24 @@ public class BackgroundWorkerService extends HeadlessJsTaskService {
             String title = _notification.getString("title");
             String text = _notification.getString("text");
 
-            Notification notification = new Notification.Builder(this, worker)
-                    .setContentTitle(title)
-                    .setContentText(text)
+            Notification.Builder builder = new Notification.Builder(this, worker)
                     .setWhen(System.currentTimeMillis())
-                    .setSmallIcon(R.drawable.ic_notification)
-                    .build();
+                    .setSmallIcon(R.drawable.ic_notification);
+
+            if(title!=null && text!= null) {
+                builder.setContentTitle(title).setContentText(text);
+            }
+
+            Notification notification = builder.build();
 
             startForeground(123456789, notification);
 
         }
 
-        if(worker == null || payload == null) return null;
+        Bundle extras = intent.getExtras();
 
-        return new HeadlessJsTaskConfig(worker, Arguments.fromBundle(intent.getExtras()), TimeUnit.MINUTES.toMillis(10), true);
+        assert extras != null;
+        return new HeadlessJsTaskConfig(worker, Arguments.fromBundle(extras), TimeUnit.MINUTES.toMillis(10), true);
 
     }
 
