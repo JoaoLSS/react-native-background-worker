@@ -80,7 +80,7 @@ public class BackgroundWorker extends Worker {
         while(this.workflowResult.equals("running")) { sleep(100); }
 
         Data outputData = new Data.Builder()
-                .putString("result", this.result)
+                .putString("outputData", this.result)
                 .build();
 
         switch (this.workflowResult) {
