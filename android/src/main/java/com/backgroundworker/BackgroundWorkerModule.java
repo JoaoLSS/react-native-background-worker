@@ -11,6 +11,8 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.work.Configuration;
 import androidx.work.Constraints;
@@ -43,6 +45,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
@@ -155,6 +158,35 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void workInfo(String id, Promise sendInfo) {
+        try {
+            WorkInfo info = WorkManager.getInstance(this.getReactApplicationContext()).getWorkInfoById(UUID.fromString(id)).get();
+            WritableMap _info = Arguments.fromBundle(Parser.getWorkInfo(info));
+            sendInfo.resolve(_info);
+        }
+        catch(Exception e) {
+            sendInfo.reject(e);
+        }
+    }
+
+    public void registerListener(final String id) {
+        Log.d(TAG, "registering listener");
+        LiveData<WorkInfo> data = WorkManager.getInstance(this.getReactApplicationContext()).getWorkInfoByIdLiveData(UUID.fromString(id));
+        data.observeForever(new Observer<WorkInfo>() {
+            @Override
+            public void onChanged(WorkInfo workInfo) {
+                context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                        .emit(id+"info", Arguments.fromBundle(Parser.getWorkInfo(workInfo)));
+            }
+        });
+
+//        ListenableFuture<WorkInfo> future = WorkManager.getInstance(this.getReactApplicationContext()).getWorkInfoById(UUID.fromString(id));
+//        future.addListener(new Runnable() {
+//            @Override
+//            public void run() {
+//                BackgroundWorkerModule.context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+//                        .emit(id + "info", Arguments.fromBundle(extras));
+//            }
+//        }, new Executor() { @Override public void execute(Runnable runnable) { runnable.run(); }});
     }
 
     @ReactMethod

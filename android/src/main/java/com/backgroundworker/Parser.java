@@ -1,10 +1,12 @@
 package com.backgroundworker;
 
+import android.os.Bundle;
 import android.util.Log;
 
 import androidx.work.Constraints;
 import androidx.work.Data;
 import androidx.work.NetworkType;
+import androidx.work.WorkInfo;
 
 import com.facebook.react.bridge.ReadableMap;
 
@@ -59,6 +61,28 @@ public class Parser {
 
         return dataBuilder.build();
 
+    }
+
+    static private String getWorkState(WorkInfo.State state) {
+        switch (state) {
+            case FAILED: return "failed";
+            case BLOCKED: return "blocked";
+            case RUNNING: return "running";
+            case ENQUEUED: return "enqueued";
+            case CANCELLED: return "cancelled";
+            case SUCCEEDED: return "succeeded";
+            default: return "unknown";
+        }
+    }
+
+    static public Bundle getWorkInfo(WorkInfo info) {
+
+        Bundle _info = new Bundle();
+
+        _info.putString("state", getWorkState(info.getState()));
+        _info.putInt("attempts", info.getRunAttemptCount());
+
+        return _info;
     }
 
 }

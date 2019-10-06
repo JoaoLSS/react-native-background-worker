@@ -77,3 +77,14 @@ export const enqueue = (work: {
 export const cancelWork = (id: string) => NativeModules.BackgroundWorker.cancelWorker(id)
 
 export const workInfo = (id: string) => new Promise((resolve) => NativeModules.BackgroundWorker.workInfo(id, resolve))
+
+export const subscribe = (
+    id: string,
+    cb: (workInfo: {
+        state: "failed" | "blocked" | "running" | "enqueued" | "cancelled" | "succeeded" | "unknown",
+        attempts: number,
+    }) => void,
+) => {
+    NativeModules.BackgroundWorker.registerListener(id)
+    NativeAppEventEmitter.addListener(id+"info", cb)
+}

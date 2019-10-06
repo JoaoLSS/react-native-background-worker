@@ -73,8 +73,6 @@ public class BackgroundWorker extends Worker {
         BackgroundWorkerModule.context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                 .emit(worker, Arguments.fromBundle(extras));
 
-//        LocalBroadcastManager.getInstance(BackgroundWorkerModule.context).sendBroadcast(broadcast);
-
         while(this.result.equals("running")) { sleep(100); }
 
         switch (this.result) {
