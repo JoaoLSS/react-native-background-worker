@@ -58,6 +58,8 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
     static final String TAG = "RNBW";
 
+    private HashMap<String, Observer<WorkInfo>> observers = new HashMap<>();
+
     private BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -176,27 +178,30 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void registerListener(final String id) {
         Log.d(TAG, "registering listener");
+        if(!observers.containsKey(id)) return;
         final LiveData<WorkInfo> data = WorkManager.getInstance(this.getReactApplicationContext()).getWorkInfoByIdLiveData(UUID.fromString(id));
+        final Observer<WorkInfo> observer = new Observer<WorkInfo>() {
+            @Override
+            public void onChanged(WorkInfo workInfo) {
+                context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                        .emit(id+"info", Arguments.fromBundle(Parser.getWorkInfo(workInfo)));
+            }
+        };
         Handler.createAsync(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
-                data.observeForever(new Observer<WorkInfo>() {
-                    @Override
-                    public void onChanged(WorkInfo workInfo) {
-                        context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                                .emit(id+"info", Arguments.fromBundle(Parser.getWorkInfo(workInfo)));
-                    }
-                });
+                data.observeForever(observer);
+                observers.put(id, observer);
             }
         });
-//        ListenableFuture<WorkInfo> future = WorkManager.getInstance(this.getReactApplicationContext()).getWorkInfoById(UUID.fromString(id));
-//        future.addListener(new Runnable() {
-//            @Override
-//            public void run() {
-//                BackgroundWorkerModule.context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-//                        .emit(id + "info", Arguments.fromBundle(extras));
-//            }
-//        }, new Executor() { @Override public void execute(Runnable runnable) { runnable.run(); }});
+    }
+
+    @ReactMethod
+    public void removeListener(final String id) {
+        Observer<WorkInfo> observer = observers.get(id);
+        if(observer==null) return;
+        final LiveData<WorkInfo> data = WorkManager.getInstance(this.getReactApplicationContext()).getWorkInfoByIdLiveData(UUID.fromString(id));
+        data.removeObserver(observer);
     }
 
     @ReactMethod

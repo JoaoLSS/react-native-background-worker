@@ -88,4 +88,5 @@ export const subscribe = (
     console.log(`registering listener for id ${id}`)
     NativeModules.BackgroundWorker.registerListener(id)
     NativeAppEventEmitter.addListener(id+"info", cb)
+    return () => NativeModules.BackgroundWorker.removeListener(id)
 }
