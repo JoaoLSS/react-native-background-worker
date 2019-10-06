@@ -168,6 +168,7 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
         }
     }
 
+    @ReactMethod
     public void registerListener(final String id) {
         Log.d(TAG, "registering listener");
         LiveData<WorkInfo> data = WorkManager.getInstance(this.getReactApplicationContext()).getWorkInfoByIdLiveData(UUID.fromString(id));
