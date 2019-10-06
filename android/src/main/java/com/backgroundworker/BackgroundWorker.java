@@ -1,6 +1,5 @@
 package com.backgroundworker;
 
-import android.app.Notification;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -15,12 +14,7 @@ import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import com.facebook.react.bridge.Arguments;
-import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 import static android.os.SystemClock.sleep;
 
@@ -58,11 +52,7 @@ public class BackgroundWorker extends Worker {
     @NonNull
     @Override
     public Result doWork() {
-
-        Log.d(TAG, "doing Work");
-
         if(BackgroundWorkerModule.context == null) return Result.retry();
-
         if(this.payload == null || this.worker == null) return Result.failure();
 
         Bundle extras = new Bundle();

@@ -4,88 +4,57 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.res.AssetManager;
-import android.content.res.Resources;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-import androidx.work.Configuration;
 import androidx.work.Constraints;
 import androidx.work.Data;
 import androidx.work.ExistingPeriodicWorkPolicy;
-import androidx.work.ExistingWorkPolicy;
-import androidx.work.ListenableWorker;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 import androidx.work.WorkRequest;
-import androidx.work.WorkerFactory;
-import androidx.work.WorkerParameters;
 
 import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
-import com.facebook.react.bridge.Callback;
-import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
-import com.google.common.util.concurrent.ListenableFuture;
 
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
     static ReactApplicationContext context;
-
-    static final String TAG = "RNBW";
-
     private HashMap<String, Observer<WorkInfo>> observers = new HashMap<>();
-
-    private BroadcastReceiver receiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-            Log.d(TAG, "sending event to JS");
-
-            String worker = intent.getStringExtra("worker");
-            String id = intent.getStringExtra("id");
-            String payload = intent.getStringExtra("payload");
-
-            Bundle extras = new Bundle();
-
-            extras.putString("id", id);
-            extras.putString("payload", payload);
-
-            BackgroundWorkerModule.this.getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                    .emit(worker, Arguments.fromBundle(extras));
-        }
-    };
-
     private HashMap<String, ReadableMap> workers = new HashMap<>();
 
     public BackgroundWorkerModule(ReactApplicationContext reactContext) {
         super(reactContext);
         BackgroundWorkerModule.context = reactContext;
-        LocalBroadcastManager.getInstance(context).registerReceiver(this.receiver, new IntentFilter("DO-WORK"));
+        BroadcastReceiver receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String worker = intent.getStringExtra("worker");
+                Bundle extras = intent.getExtras();
+                BackgroundWorkerModule.this.getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                        .emit(worker, extras == null ? null : Arguments.fromBundle(extras));
+            }
+        };
+        LocalBroadcastManager.getInstance(context).registerReceiver(receiver, new IntentFilter("DO-WORK"));
     }
 
     @Override
@@ -106,7 +75,7 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
             Constraints constraints = Parser.getConstraints(worker.getMap("constraints"));
 
             PeriodicWorkRequest.Builder builder = new PeriodicWorkRequest.Builder(BackgroundWorker.class, 15, TimeUnit.MINUTES);
-            if(constraints != null ) builder.setConstraints(constraints);
+            if(constraints != null) builder.setConstraints(constraints);
 
             PeriodicWorkRequest request = builder.build();
 
@@ -128,20 +97,14 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
     private void enqueue(ReadableMap work, Callback sendId) {
 
         String worker = work.getString("worker");
-        String payload = work.getString("payload");
-        boolean shouldRetry = work.getBoolean("shouldRetry");
-
         ReadableMap _worker = workers.get(worker);
 
         if(_worker==null) return;
-
         ReadableMap notification = _worker.getMap("notification");
 
-        assert notification != null;
+        if(notification==null) return;
         Data inputData = new Data.Builder()
-                .putString("worker", worker)
-                .putString("payload", payload)
-                .putBoolean("shouldRetry", shouldRetry)
+                .putAll(work.toHashMap())
                 .putString("title", notification.getString("title"))
                 .putString("text", notification.getString("text"))
                 .build();
@@ -180,7 +143,6 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
     @RequiresApi(api = Build.VERSION_CODES.P)
     @ReactMethod
     public void registerListener(final String id) {
-        Log.d(TAG, "registering listener");
         if(observers.containsKey(id)) return;
         final LiveData<WorkInfo> data = WorkManager.getInstance(this.getReactApplicationContext()).getWorkInfoByIdLiveData(UUID.fromString(id));
         final Observer<WorkInfo> observer = new Observer<WorkInfo>() {
@@ -202,7 +164,6 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
     @RequiresApi(api = Build.VERSION_CODES.P)
     @ReactMethod
     public void removeListener(final String id) {
-        Log.d(TAG, "removing listener");
         final Observer<WorkInfo> observer = observers.get(id);
         if(observer==null) return;
         final LiveData<WorkInfo> data = WorkManager.getInstance(this.getReactApplicationContext()).getWorkInfoByIdLiveData(UUID.fromString(id));
@@ -211,9 +172,6 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void startHeadlessJS(ReadableMap work) {
-
-        Log.d(TAG, "starting Headless JS");
-
         Intent headlessJS = new Intent(BackgroundWorkerModule.this.getReactApplicationContext(), BackgroundWorkerService.class);
         Bundle extras = Arguments.toBundle(work);
         if(extras != null) headlessJS.putExtras(extras);

@@ -53,16 +53,6 @@ public class Parser {
 
     }
 
-    static public Data getWorkerData(ReadableMap data) {
-
-        Data.Builder dataBuilder  = new Data.Builder();
-
-        dataBuilder.putInt("timeout", data.getInt("timeout"));
-
-        return dataBuilder.build();
-
-    }
-
     static private String getWorkState(WorkInfo.State state) {
         switch (state) {
             case FAILED: return "failed";

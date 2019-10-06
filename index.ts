@@ -28,44 +28,16 @@ export const setWorker = (worker: {
         }
     }
 
-    AppRegistry.registerHeadlessTask(worker.name, () => async ({ payload, id }) => {
-        console.log(`STARTING HEADLESS JS`)
-        await work(id, payload)
-    })
+    AppRegistry.registerHeadlessTask(worker.name, () => async ({ payload, id }) => await work(id, payload))
 
     NativeAppEventEmitter.addListener(worker.name, ({ id, payload }) => {
 
-        if(AppState.currentState==="active") {
-            console.log(`RUNNING IN FOREGROUND`)
-            work(id, payload)
-        }
-        else {
-            console.log(`CALLING HEADLESS JS`)
-            NativeModules.BackgroundWorker.startHeadlessJS({ worker: worker.name, payload, id, ...worker.notification,  })
-        }
+        if(AppState.currentState==="active") work(id, payload)
+        else NativeModules.BackgroundWorker.startHeadlessJS({ worker: worker.name, payload, id, ...worker.notification,  })
 
     })
 
     NativeModules.BackgroundWorker.setWorker(_worker)
-
-    // const register = () => AppRegistry.registerHeadlessTask(worker.name, () => async ({ payload, id }) => {
-
-    //     try {
-    //         const result = await workflow(JSON.parse(payload))
-    //         NativeModules.BackgroundWorker.result(id, result)
-    //     }
-    //     catch(error) {
-    //         NativeModules.BackgroundWorker.result(id, "failure")
-    //     }
-
-    // // })
-
-    // register()
-    // AppState.addEventListener("change", (state) => {
-    //     console.log("BACKGROUND_RESSURGANCE", { state })
-    //     state === "active" && register()
-    // })
-    // NativeAppEventEmitter.addListener("WAKE-UP", () => console.log("WAKE-UP"))
 }
 
 export const enqueue = (work: {
@@ -73,7 +45,11 @@ export const enqueue = (work: {
     payload: any,
     shouldRetry: boolean,
 }) => new Promise((resolve) => NativeModules.BackgroundWorker
-    .enqueue({ worker: work.worker, payload: JSON.stringify(work.payload), shouldRetry: work.shouldRetry }, resolve)) as Promise<string>
+    .enqueue({
+        worker: work.worker,
+        payload: JSON.stringify(work.payload),
+        shouldRetry: work.shouldRetry
+    }, resolve)) as Promise<string>
 
 export const cancelWork = (id: string) => NativeModules.BackgroundWorker.cancelWorker(id)
 
@@ -81,14 +57,13 @@ export const workInfo = (id: string) => new Promise((resolve) => NativeModules.B
 
 export const subscribe = (
     id: string,
-    cb: (workInfo: {
+    onChange: (workInfo: {
         state: "failed" | "blocked" | "running" | "enqueued" | "cancelled" | "succeeded" | "unknown",
         attempts: number,
         outputData: any,
     }) => void,
 ) => {
-    console.log(`registering listener for id ${id}`)
     NativeModules.BackgroundWorker.registerListener(id)
-    NativeAppEventEmitter.addListener(id+"info", (_info) => cb({ ..._info, outputData: JSON.parse(_info.outputData) }))
+    NativeAppEventEmitter.addListener(id+"info", (_info) => onChange({ ..._info, outputData: JSON.parse(_info.outputData) }))
     return () => NativeModules.BackgroundWorker.removeListener(id)
 }

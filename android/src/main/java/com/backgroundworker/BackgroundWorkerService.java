@@ -1,33 +1,16 @@
 package com.backgroundworker;
 
-import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.res.Resources;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.Icon;
 import android.os.Bundle;
-import android.util.Log;
-
-import androidx.core.app.NotificationCompat;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.facebook.react.HeadlessJsTaskService;
 import com.facebook.react.bridge.Arguments;
-import com.facebook.react.bridge.ReadableMap;
-import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.jstasks.HeadlessJsTaskConfig;
 
-import java.sql.Array;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
@@ -40,13 +23,9 @@ public class BackgroundWorkerService extends HeadlessJsTaskService {
     @Override
     protected HeadlessJsTaskConfig getTaskConfig(Intent intent) {
 
-        HeadlessJsTaskConfig config = null;
-
         String worker = intent.getStringExtra("worker");
         String title = intent.getStringExtra("title");
         String text = intent.getStringExtra("text");
-
-        Log.d(TAG, "WORKER: " + worker);
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
 
