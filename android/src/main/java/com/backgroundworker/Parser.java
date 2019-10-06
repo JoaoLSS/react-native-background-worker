@@ -81,6 +81,7 @@ public class Parser {
 
         _info.putString("state", getWorkState(info.getState()));
         _info.putInt("attempts", info.getRunAttemptCount());
+        _info.putString("outputData", info.getOutputData().getString("outputData"));
 
         return _info;
     }

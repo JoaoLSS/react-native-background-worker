@@ -26,18 +26,21 @@ import static android.os.SystemClock.sleep;
 
 public class BackgroundWorker extends Worker {
 
-    static String TAG = "BG_WORKER::";
+    private static String TAG = "BG_WORKER::";
 
-    final String id;
-    final String payload;
-    final String worker;
+    private final String id;
+    private final String payload;
+    private final String worker;
+    private final boolean shouldRetry;
 
-    String result = "running";
+    private String workflowResult = "running";
+    private String result;
 
 
     BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            BackgroundWorker.this.workflowResult = intent.getStringExtra("workflowResult");
             BackgroundWorker.this.result = intent.getStringExtra("result");
         }
     };
@@ -48,6 +51,7 @@ public class BackgroundWorker extends Worker {
         Data inputData = workerParams.getInputData();
         this.worker = inputData.getString("worker");
         this.payload = inputData.getString("payload");
+        this.shouldRetry = inputData.getBoolean("shouldRetry", false);
         LocalBroadcastManager.getInstance(this.getApplicationContext()).registerReceiver(this.receiver, new IntentFilter(this.id + "result"));
     }
 
@@ -73,12 +77,15 @@ public class BackgroundWorker extends Worker {
         BackgroundWorkerModule.context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                 .emit(worker, Arguments.fromBundle(extras));
 
-        while(this.result.equals("running")) { sleep(100); }
+        while(this.workflowResult.equals("running")) { sleep(100); }
 
-        switch (this.result) {
-            case "success": return Result.success();
-            case "retry": return Result.retry();
-            default: return Result.failure();
+        Data outputData = new Data.Builder()
+                .putString("result", this.result)
+                .build();
+
+        switch (this.workflowResult) {
+            case "success": return Result.success(outputData);
+            default: return shouldRetry ? Result.retry() : Result.failure(outputData);
         }
 
     }

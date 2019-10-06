@@ -117,9 +117,10 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void result(String id, String result) {
+    public void result(String id, String result, String workflowResult) {
         Intent intent = new Intent(id + "result");
         intent.putExtra("result", result);
+        intent.putExtra("workflowResult", workflowResult);
         LocalBroadcastManager.getInstance(this.getReactApplicationContext()).sendBroadcast(intent);
     }
 
@@ -128,6 +129,7 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
         String worker = work.getString("worker");
         String payload = work.getString("payload");
+        boolean shouldRetry = work.getBoolean("shouldRetry");
 
         ReadableMap _worker = workers.get(worker);
 
@@ -139,6 +141,7 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
         Data inputData = new Data.Builder()
                 .putString("worker", worker)
                 .putString("payload", payload)
+                .putBoolean("shouldRetry", shouldRetry)
                 .putString("title", notification.getString("title"))
                 .putString("text", notification.getString("text"))
                 .build();

@@ -13,7 +13,7 @@ export const setWorker = (worker: {
         title: string,
         text: string,
     },
-    workflow: (payload: any) => Promise<"success" | "failure" | "retry">,
+    workflow: (payload: any) => Promise<any>,
 }) => {
     
     const { workflow, ..._worker } = worker
@@ -21,10 +21,10 @@ export const setWorker = (worker: {
     const work = async (id: string, payload: string) => {
         try {
             const result = await workflow(JSON.parse(payload))
-            NativeModules.BackgroundWorker.result(id, result)
+            NativeModules.BackgroundWorker.result(id, JSON.stringify(result), "success")
         }
         catch(error) {
-            NativeModules.BackgroundWorker.result(id, "failure")
+            NativeModules.BackgroundWorker.result(id, JSON.stringify(error), "failure")
         }
     }
 
@@ -71,8 +71,9 @@ export const setWorker = (worker: {
 export const enqueue = (work: {
     worker: string,
     payload: any,
+    shouldRetry: boolean,
 }) => new Promise((resolve) => NativeModules.BackgroundWorker
-    .enqueue({ worker: work.worker, payload: JSON.stringify(work.payload) }, resolve)) as Promise<string>
+    .enqueue({ worker: work.worker, payload: JSON.stringify(work.payload), shouldRetry: work.shouldRetry }, resolve)) as Promise<string>
 
 export const cancelWork = (id: string) => NativeModules.BackgroundWorker.cancelWorker(id)
 
@@ -83,10 +84,11 @@ export const subscribe = (
     cb: (workInfo: {
         state: "failed" | "blocked" | "running" | "enqueued" | "cancelled" | "succeeded" | "unknown",
         attempts: number,
+        outputData: any,
     }) => void,
 ) => {
     console.log(`registering listener for id ${id}`)
     NativeModules.BackgroundWorker.registerListener(id)
-    NativeAppEventEmitter.addListener(id+"info", cb)
+    NativeAppEventEmitter.addListener(id+"info", (_info) => cb({ ..._info, outputData: JSON.parse(_info.outputData) }))
     return () => NativeModules.BackgroundWorker.removeListener(id)
 }
