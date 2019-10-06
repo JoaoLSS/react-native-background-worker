@@ -190,6 +190,8 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
         Handler.createAsync(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
+                WorkInfo info = data.getValue();
+                if(info == null || info.getState() == WorkInfo.State.CANCELLED) return;
                 data.observeForever(observer);
                 observers.put(id, observer);
             }
