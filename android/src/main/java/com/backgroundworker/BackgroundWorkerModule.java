@@ -196,13 +196,14 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
         });
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.P)
     @ReactMethod
     public void removeListener(final String id) {
         Log.d(TAG, "removing listener");
-        Observer<WorkInfo> observer = observers.get(id);
+        final Observer<WorkInfo> observer = observers.get(id);
         if(observer==null) return;
         final LiveData<WorkInfo> data = WorkManager.getInstance(this.getReactApplicationContext()).getWorkInfoByIdLiveData(UUID.fromString(id));
-        data.removeObserver(observer);
+        Handler.createAsync(Looper.getMainLooper()).post(new Runnable() { @Override public void run() { data.removeObserver(observer); } });
     }
 
     @ReactMethod
