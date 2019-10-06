@@ -43,7 +43,6 @@ public class BackgroundWorkerService extends HeadlessJsTaskService {
         HeadlessJsTaskConfig config = null;
 
         String worker = intent.getStringExtra("worker");
-        String payload = intent.getStringExtra("payload");
         String title = intent.getStringExtra("title");
         String text = intent.getStringExtra("text");
 

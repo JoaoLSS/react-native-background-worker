@@ -214,16 +214,9 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
         Log.d(TAG, "starting Headless JS");
 
-        String id = work.getString("id");
-        String worker = work.getString("worker");
-        String payload = work.getString("payload");
-
         Intent headlessJS = new Intent(BackgroundWorkerModule.this.getReactApplicationContext(), BackgroundWorkerService.class);
-
-        headlessJS.putExtra("id", id);
-        headlessJS.putExtra("worker", worker);
-        headlessJS.putExtra("payload", payload);
-
+        Bundle extras = Arguments.toBundle(work);
+        if(extras != null) headlessJS.putExtras(extras);
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) BackgroundWorkerModule.this.getReactApplicationContext().startForegroundService(headlessJS);
         else BackgroundWorkerModule.this.getReactApplicationContext().startService(headlessJS);
     }

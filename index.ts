@@ -41,7 +41,7 @@ export const setWorker = (worker: {
         }
         else {
             console.log(`CALLING HEADLESS JS`)
-            NativeModules.BackgroundWorker.startHeadlessJS({ worker: worker.name, payload, id })
+            NativeModules.BackgroundWorker.startHeadlessJS({ worker: worker.name, payload, id, ...worker.notification,  })
         }
 
     })
