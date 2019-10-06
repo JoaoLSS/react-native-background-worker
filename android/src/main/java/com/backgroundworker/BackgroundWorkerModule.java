@@ -6,11 +6,15 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -168,18 +172,23 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.P)
     @ReactMethod
     public void registerListener(final String id) {
         Log.d(TAG, "registering listener");
-        LiveData<WorkInfo> data = WorkManager.getInstance(this.getReactApplicationContext()).getWorkInfoByIdLiveData(UUID.fromString(id));
-        data.observeForever(new Observer<WorkInfo>() {
+        final LiveData<WorkInfo> data = WorkManager.getInstance(this.getReactApplicationContext()).getWorkInfoByIdLiveData(UUID.fromString(id));
+        Handler.createAsync(Looper.getMainLooper()).post(new Runnable() {
             @Override
-            public void onChanged(WorkInfo workInfo) {
-                context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                        .emit(id+"info", Arguments.fromBundle(Parser.getWorkInfo(workInfo)));
+            public void run() {
+                data.observeForever(new Observer<WorkInfo>() {
+                    @Override
+                    public void onChanged(WorkInfo workInfo) {
+                        context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                                .emit(id+"info", Arguments.fromBundle(Parser.getWorkInfo(workInfo)));
+                    }
+                });
             }
         });
-
 //        ListenableFuture<WorkInfo> future = WorkManager.getInstance(this.getReactApplicationContext()).getWorkInfoById(UUID.fromString(id));
 //        future.addListener(new Runnable() {
 //            @Override
