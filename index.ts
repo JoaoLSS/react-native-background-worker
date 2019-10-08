@@ -53,7 +53,7 @@ export const enqueue = (work: {
 
 export const cancelWork = (id: string) => NativeModules.BackgroundWorker.cancelWorker(id)
 
-type WorkInfo = {
+export type WorkInfo = {
     state: "failed" | "blocked" | "running" | "enqueued" | "cancelled" | "succeeded" | "unknown",
     attempts: number,
     outputData: any,
