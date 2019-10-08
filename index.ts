@@ -66,6 +66,9 @@ export const subscribe = (
     onChange: (workInfo: WorkInfo) => void,
 ) => {
     NativeModules.BackgroundWorker.registerListener(id)
-    NativeAppEventEmitter.addListener(id+"info", (_info) => onChange({ ..._info, outputData: JSON.parse(_info.outputData) }))
-    return () => NativeModules.BackgroundWorker.removeListener(id)
+    const subscription = NativeAppEventEmitter.addListener(id+"info", (_info) => onChange({ ..._info, outputData: JSON.parse(_info.outputData) }))
+    return () => {
+        NativeModules.BackgroundWorker.removeListener(id)
+        NativeAppEventEmitter.removeSubscription(subscription)
+    }
 }
