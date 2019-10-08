@@ -59,7 +59,7 @@ export type WorkInfo = {
     outputData: any,
 }
 
-export const workInfo = (id: string) => new Promise((resolve) => NativeModules.BackgroundWorker.workInfo(id, resolve)) as Promise<WorkInfo>
+export const workInfo = NativeModules.BackgroundWorker.workInfo as (id: string) => Promise<WorkInfo>
 
 export const subscribe = (
     id: string,
