@@ -53,15 +53,17 @@ export const enqueue = (work: {
 
 export const cancelWork = (id: string) => NativeModules.BackgroundWorker.cancelWorker(id)
 
-export const workInfo = (id: string) => new Promise((resolve) => NativeModules.BackgroundWorker.workInfo(id, resolve))
+type WorkInfo = {
+    state: "failed" | "blocked" | "running" | "enqueued" | "cancelled" | "succeeded" | "unknown",
+    attempts: number,
+    outputData: any,
+}
+
+export const workInfo = (id: string) => new Promise((resolve) => NativeModules.BackgroundWorker.workInfo(id, resolve)) as Promise<WorkInfo>
 
 export const subscribe = (
     id: string,
-    onChange: (workInfo: {
-        state: "failed" | "blocked" | "running" | "enqueued" | "cancelled" | "succeeded" | "unknown",
-        attempts: number,
-        outputData: any,
-    }) => void,
+    onChange: (workInfo: WorkInfo) => void,
 ) => {
     NativeModules.BackgroundWorker.registerListener(id)
     NativeAppEventEmitter.addListener(id+"info", (_info) => onChange({ ..._info, outputData: JSON.parse(_info.outputData) }))
