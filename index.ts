@@ -40,24 +40,41 @@ export const setWorker = (worker: {
     NativeModules.BackgroundWorker.setWorker(_worker)
 }
 
-export const enqueue = (work: {
-    worker: string,
-    payload: any,
-    shouldRetry: boolean,
-}) => new Promise((resolve) => NativeModules.BackgroundWorker
-    .enqueue({
-        worker: work.worker,
-        payload: JSON.stringify(work.payload),
-        shouldRetry: work.shouldRetry
-    }, resolve)) as Promise<string>
-
-export const cancelWork = (id: string) => NativeModules.BackgroundWorker.cancelWorker(id)
-
 export type WorkInfo = {
     state: "failed" | "blocked" | "running" | "enqueued" | "cancelled" | "succeeded" | "unknown",
     attempts: number,
     outputData: any,
 }
+
+export const enqueue = (work: {
+    worker: string,
+    payload: any,
+    shouldRetry: boolean,
+    listener ?: (workInfo: WorkInfo) => void,
+}) => new Promise((resolve) => {
+    NativeModules.BackgroundWorker
+    .enqueue({
+        worker: work.worker,
+        payload: JSON.stringify(work.payload),
+        shouldRetry: work.shouldRetry
+    }, (id: string) => {
+        const { listener } = work
+        if(listener) {
+            NativeModules.BackgroundWorker.registerListener(id)
+            const subscription = NativeAppEventEmitter.addListener(id+"info", (_info) => listener({ ..._info, outputData: JSON.parse(_info.outputData) }))
+            resolve({
+                id,
+                unsubscribe: () => {
+                    NativeModules.BackgroundWorker.removeListener(id)
+                    NativeAppEventEmitter.removeSubscription(subscription)
+                }
+            })
+        }
+        else resolve({ id })
+    })
+}) as Promise<{ id: string, unsubscribe ?: () => void }>
+
+export const cancelWork = (id: string) => NativeModules.BackgroundWorker.cancelWorker(id)
 
 export const workInfo = NativeModules.BackgroundWorker.workInfo as (id: string) => Promise<WorkInfo>
 
@@ -71,4 +88,12 @@ export const subscribe = (
         NativeModules.BackgroundWorker.removeListener(id)
         NativeAppEventEmitter.removeSubscription(subscription)
     }
+}
+
+export const WorkManager = {
+    setWorker,
+    enqueue,
+    cancelWork,
+    workInfo,
+    subscribe,
 }

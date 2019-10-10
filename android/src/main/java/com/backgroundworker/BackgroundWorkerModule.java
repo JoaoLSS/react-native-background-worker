@@ -159,6 +159,9 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
                 observers.put(id, observer);
             }
         });
+        WorkInfo info = data.getValue();
+        if(info!=null) context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                .emit(id+"info", Arguments.fromBundle(Parser.getWorkInfo(info)));
     }
 
     @RequiresApi(api = Build.VERSION_CODES.P)
@@ -167,7 +170,11 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
         final Observer<WorkInfo> observer = observers.get(id);
         if(observer==null) return;
         final LiveData<WorkInfo> data = WorkManager.getInstance(this.getReactApplicationContext()).getWorkInfoByIdLiveData(UUID.fromString(id));
-        Handler.createAsync(Looper.getMainLooper()).post(new Runnable() { @Override public void run() { data.removeObserver(observer); } });
+        Handler.createAsync(Looper.getMainLooper()).post(new Runnable() {
+            @Override public void run() {
+                data.removeObserver(observer);
+            }
+        });
     }
 
     @ReactMethod
