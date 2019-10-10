@@ -132,6 +132,10 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
     public void workInfo(String id, Promise sendInfo) {
         try {
             WorkInfo info = WorkManager.getInstance(this.getReactApplicationContext()).getWorkInfoById(UUID.fromString(id)).get();
+            if(info == null) {
+                sendInfo.reject("404", "Work Not Found");
+                return;
+            }
             WritableMap _info = Arguments.fromBundle(Parser.getWorkInfo(info));
             sendInfo.resolve(_info);
         }
