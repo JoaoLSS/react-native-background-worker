@@ -46,6 +46,8 @@ export type WorkInfo = {
     outputData: any,
 }
 
+export type WorkStatus = WorkInfo["state"]
+
 export const enqueue = (work: {
     worker: string,
     payload: any,
