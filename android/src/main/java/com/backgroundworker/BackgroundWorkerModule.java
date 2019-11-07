@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
     static ReactApplicationContext context;
+    private final Handler handler = new Handler(Looper.getMainLooper());
     private HashMap<String, Observer<WorkInfo>> observers = new HashMap<>();
     private HashMap<String, ReadableMap> workers = new HashMap<>();
 
@@ -156,7 +157,6 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
                         .emit(id+"info", Arguments.fromBundle(Parser.getWorkInfo(workInfo)));
             }
         };
-        Handler handler = new Handler(Looper.getMainLooper());
         handler.post(new Runnable() {
             @Override
             public void run() {
@@ -174,7 +174,6 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
         final Observer<WorkInfo> observer = observers.get(id);
         if(observer==null) return;
         final LiveData<WorkInfo> data = WorkManager.getInstance(this.getReactApplicationContext()).getWorkInfoByIdLiveData(UUID.fromString(id));
-        Handler handler = new Handler(Looper.getMainLooper());
         handler.post(new Runnable() {
             @Override public void run() {
                 data.removeObserver(observer);
