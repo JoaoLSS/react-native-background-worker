@@ -10,6 +10,7 @@ import android.os.Handler;
 import android.os.Looper;
 
 import androidx.annotation.RequiresApi;
+import androidx.core.os.HandlerCompat;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -144,7 +145,6 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.P)
     @ReactMethod
     public void registerListener(final String id) {
         if(observers.containsKey(id)) return;
@@ -156,7 +156,8 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
                         .emit(id+"info", Arguments.fromBundle(Parser.getWorkInfo(workInfo)));
             }
         };
-        Handler.createAsync(Looper.getMainLooper()).post(new Runnable() {
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(new Runnable() {
             @Override
             public void run() {
                 data.observeForever(observer);
@@ -168,13 +169,13 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
                 .emit(id+"info", Arguments.fromBundle(Parser.getWorkInfo(info)));
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.P)
     @ReactMethod
     public void removeListener(final String id) {
         final Observer<WorkInfo> observer = observers.get(id);
         if(observer==null) return;
         final LiveData<WorkInfo> data = WorkManager.getInstance(this.getReactApplicationContext()).getWorkInfoByIdLiveData(UUID.fromString(id));
-        Handler.createAsync(Looper.getMainLooper()).post(new Runnable() {
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(new Runnable() {
             @Override public void run() {
                 data.removeObserver(observer);
             }
