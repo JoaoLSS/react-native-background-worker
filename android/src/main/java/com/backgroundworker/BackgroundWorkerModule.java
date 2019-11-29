@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+<<<<<<< HEAD
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -14,6 +15,21 @@ import androidx.core.os.HandlerCompat;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+=======
+import android.content.res.AssetManager;
+import android.content.res.Resources;
+import android.os.Bundle;
+import android.util.Log;
+
+import androidx.annotation.NonNull;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.work.BackoffPolicy;
+import androidx.work.Configuration;
+>>>>>>> master
 import androidx.work.Constraints;
 import androidx.work.Data;
 import androidx.work.ExistingPeriodicWorkPolicy;
@@ -22,9 +38,13 @@ import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 import androidx.work.WorkRequest;
+import androidx.work.impl.model.WorkSpec;
 
 import com.facebook.react.bridge.Arguments;
+<<<<<<< HEAD
 import com.facebook.react.bridge.Callback;
+=======
+>>>>>>> master
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -32,9 +52,18 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
+import com.google.common.util.concurrent.ListenableFuture;
 
+<<<<<<< HEAD
 import java.util.HashMap;
+=======
+import java.io.IOException;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Set;
+>>>>>>> master
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
@@ -65,7 +94,59 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
+<<<<<<< HEAD
     public void setWorker(ReadableMap worker) {
+=======
+    public void oneTimeWorkRequest(ReadableMap data, ReadableMap config, ReadableMap _constraints, Promise sendId) {
+
+        Constraints constraints = Parser.getConstraints(_constraints);
+
+        int keepResultsForAtLeast = config.getInt("keepResultsForAtLeast");
+        String backoffPolicy = config.getString("backoffPolicy");
+        int backoffDuration = config.getInt("backoffDuration");
+        int initialDelay = config.getInt("initialDelay");
+
+        Data inputData = new Data.Builder().putAll(data.toHashMap()).build();
+
+        WorkRequest request = new OneTimeWorkRequest.Builder(BackgroundWorker.class)
+                .keepResultsForAtLeast(keepResultsForAtLeast, TimeUnit.MINUTES)
+                .setBackoffCriteria(backoffPolicy == "exponential" ? BackoffPolicy.EXPONENTIAL : BackoffPolicy.LINEAR, backoffDuration, TimeUnit.MINUTES)
+                .setInitialDelay(initialDelay, TimeUnit.MINUTES)
+                .setConstraints(constraints)
+                .setInputData(inputData)
+                .build();
+
+        sendId.resolve(request.getId().toString());
+
+        WorkManager.getInstance(this.context).enqueue(request);
+
+    }
+
+    @ReactMethod
+    public void getWorkInfoById(String id) {
+        LiveData<WorkInfo> data = WorkManager.getInstance(this.context).getWorkInfoByIdLiveData(UUID.fromString(id));
+        data.observe((LifecycleOwner)this.context, new Observer<WorkInfo>() {
+            @Override
+            public void onChanged(WorkInfo workInfo) {
+                String id = workInfo.getId().toString();
+                String outputData = workInfo.getOutputData().toString();
+                String state = workInfo.getState().toString();
+                int attemptCount = workInfo.getRunAttemptCount();
+
+                Data data = new Data.Builder()
+                        .putString("state", state)
+                        .putString("outputData", outputData)
+                        .putInt("attemptCount", attemptCount)
+                        .build();
+
+                BackgroundWorkerModule.this.context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(id, data);
+            }
+        });
+    }
+
+    @ReactMethod
+    public void worker(ReadableMap _constraints, ReadableMap config, Callback sendId) {
+>>>>>>> master
 
         String name = worker.getString("name");
         String type = worker.getString("type");
@@ -189,5 +270,4 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) BackgroundWorkerModule.this.getReactApplicationContext().startForegroundService(headlessJS);
         else BackgroundWorkerModule.this.getReactApplicationContext().startService(headlessJS);
     }
-
 }
