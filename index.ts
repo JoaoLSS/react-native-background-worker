@@ -1,101 +1,71 @@
 import { NativeModules, AppRegistry, AppState, NativeAppEventEmitter } from "react-native"
 
-export const setWorker = (worker: {
-    type: "queued" | "periodic",
+interface GenericWorker<T extends "periodic"|"queued"> {
+    type: T
     name: string,
-    constraints: {
-        network: "connected" | "metered" | "notRoaming" | "unmetered" | "notRequired",
-        battery: "charging" | "notLow" | "notRequired",
-        storage: boolean,
-        idle: boolean,
+    timeout?: number,
+    foregroundBehaviour?: "headlessTask" | "foreground",
+    constraints?: {
+        network?: "connected" | "metered" | "notRoaming" | "unmetered" | "notRequired",
+        battery?: "charging" | "notLow" | "notRequired",
+        storage?: "notLow" | "notRequired",
+        idle?: boolean,
     },
     notification: {
         title: string,
         text: string,
     },
-    workflow: (payload: any) => Promise<any>,
-}) => {
-    
+}
+
+interface QueuedWorker<P,V,T extends "queued"> extends GenericWorker<T> {
+    workflow: (payload: P) => Promise<{ result: "success" | "failure" | "retry", value: V }>
+    repeatInterval?: never,
+}
+
+const isQueuedWorker = (worker: any): worker is QueuedWorker<any,any,"queued"> => worker.type && worker.type==="queued"
+
+interface PeriodicWorker<T extends "periodic"> extends GenericWorker<T> {
+    workflow: () => Promise<void>,
+    repeatInterval?: number,
+}
+
+const isPeriodicWorker = (worker: any): worker is PeriodicWorker<"periodic"> => worker.type && worker.type==="periodic"
+
+type Worker<P,V,T extends "queued"|"periodic"> = T extends "queued" ? QueuedWorker<P,V,T> : T extends "periodic" ? PeriodicWorker<T> : never
+
+function setWorker<T extends "queued"|"periodic",P=any,V=any>(worker: Worker<P,V,T>): T extends "periodic" ? Promise<String> : T extends "queued" ? Promise<true> : never {
+
     const { workflow, ..._worker } = worker
 
-    const work = async (id: string, payload: string) => {
+    const work = async (data: { id: string, payload: string }) => {
         try {
-            const result = await workflow(JSON.parse(payload))
-            NativeModules.BackgroundWorker.result(id, JSON.stringify(result), "success")
+            if(isPeriodicWorker(worker)) {
+                await worker.workflow()
+                NativeModules.BackgroundWorker.result(data.id, JSON.stringify(null), "success")
+            }
+            else if(isQueuedWorker(worker)) {
+                const { result, value } = await worker.workflow(JSON.parse(data.payload))
+                NativeModules.BackgroundWorker.result(data.id, JSON.stringify(value), result)
+            }
+            else { throw "INCOMPATIBLE_TYPE" }
         }
         catch(error) {
-            NativeModules.BackgroundWorker.result(id, JSON.stringify(error), "failure")
+            NativeModules.BackgroundWorker.result(data.id, JSON.stringify(error), "failure")
         }
     }
 
-    AppRegistry.registerHeadlessTask(worker.name, () => async ({ payload, id }) => await work(id, payload))
+    AppRegistry.registerHeadlessTask(worker.name, () => work)
+    NativeAppEventEmitter.addListener(worker.name, (data) => {
 
-    NativeAppEventEmitter.addListener(worker.name, ({ id, payload }) => {
-
-        if(AppState.currentState==="active") work(id, payload)
-        else NativeModules.BackgroundWorker.startHeadlessJS({ worker: worker.name, payload, id, ...worker.notification,  })
-
+        if(worker.foregroundBehaviour === "foreground" && AppState.currentState === "active") work(data)
+        else NativeModules.BackgroundWorker.startHeadlessTask({ ..._worker, ...data })
+        
     })
 
-    NativeModules.BackgroundWorker.setWorker(_worker)
+    return NativeModules.BackgroundWorker.registerWorker(_worker)
+
 }
 
-export type WorkInfo = {
-    state: "failed" | "blocked" | "running" | "enqueued" | "cancelled" | "succeeded" | "unknown",
-    attempts: number,
-    outputData: any,
-}
-
-export type WorkStatus = WorkInfo["state"]
-
-export const enqueue = (work: {
-    worker: string,
-    payload: any,
-    shouldRetry: boolean,
-    listener ?: (workInfo: WorkInfo) => void,
-}) => new Promise((resolve) => {
-    NativeModules.BackgroundWorker
-    .enqueue({
-        worker: work.worker,
-        payload: JSON.stringify(work.payload),
-        shouldRetry: work.shouldRetry
-    }, (id: string) => {
-        const { listener } = work
-        if(listener) {
-            NativeModules.BackgroundWorker.registerListener(id)
-            const subscription = NativeAppEventEmitter.addListener(id+"info", (_info) => listener({ ..._info, outputData: JSON.parse(_info.outputData) }))
-            resolve({
-                id,
-                unsubscribe: () => {
-                    NativeModules.BackgroundWorker.removeListener(id)
-                    NativeAppEventEmitter.removeSubscription(subscription)
-                }
-            })
-        }
-        else resolve({ id })
-    })
-}) as Promise<{ id: string, unsubscribe ?: () => void }>
-
-export const cancelWork = (id: string) => NativeModules.BackgroundWorker.cancelWorker(id)
-
-export const workInfo = NativeModules.BackgroundWorker.workInfo as (id: string) => Promise<WorkInfo>
-
-export const subscribe = (
-    id: string,
-    onChange: (workInfo: WorkInfo) => void,
-) => {
-    NativeModules.BackgroundWorker.registerListener(id)
-    const subscription = NativeAppEventEmitter.addListener(id+"info", (_info) => onChange({ ..._info, outputData: JSON.parse(_info.outputData) }))
-    return () => {
-        NativeModules.BackgroundWorker.removeListener(id)
-        NativeAppEventEmitter.removeSubscription(subscription)
-    }
-}
-
-export const WorkManager = {
-    setWorker,
-    enqueue,
-    cancelWork,
-    workInfo,
-    subscribe,
+function enqueue(work: { worker: string, payload: any }): Promise<string> {
+    return NativeModules.BackgroundWorker.enqueue(work.worker, JSON.stringify(work.payload))
 }

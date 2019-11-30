@@ -10,73 +10,78 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.work.Data;
-import androidx.work.Worker;
+import androidx.work.RxWorker;
 import androidx.work.WorkerParameters;
 
 import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import io.reactivex.Single;
+import io.reactivex.SingleEmitter;
+import io.reactivex.SingleObserver;
+import io.reactivex.SingleOnSubscribe;
 
 import static android.os.SystemClock.sleep;
 
-public class BackgroundWorker extends Worker {
+public class BackgroundWorker extends RxWorker {
 
-    private static String TAG = "BG_WORKER::";
+    private Map<String, Object> worker;
+    private String id;
 
-    private final String id;
-    private final String payload;
-    private final String worker;
-    private final boolean shouldRetry;
-
-    private String workflowResult = "running";
-    private String result;
-
-
-    BroadcastReceiver receiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            BackgroundWorker.this.workflowResult = intent.getStringExtra("workflowResult");
-            BackgroundWorker.this.result = intent.getStringExtra("result");
-        }
-    };
-
-    public BackgroundWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
-        super(context, workerParams);
-        this.id = workerParams.getId().toString();
-        Data inputData = workerParams.getInputData();
-        this.worker = inputData.getString("worker");
-        this.payload = inputData.getString("payload");
-        this.shouldRetry = inputData.getBoolean("shouldRetry", false);
-        LocalBroadcastManager.getInstance(this.getApplicationContext()).registerReceiver(this.receiver, new IntentFilter(this.id + "result"));
+    public BackgroundWorker(@NonNull Context appContext, @NonNull WorkerParameters workerParams) {
+        super(appContext, workerParams);
+        worker = workerParams.getInputData().getKeyValueMap();
+        id = workerParams.getId().toString();
     }
 
     @NonNull
     @Override
-    public Result doWork() {
-        if(BackgroundWorkerModule.context == null) return Result.retry();
-        if(this.payload == null || this.worker == null) return Result.failure();
+    public Single<Result> createWork() {
+        if(BackgroundWorkerModule.context==null) return Single.just(Result.retry());
 
-        Bundle extras = new Bundle();
-        extras.putString("payload", this.payload);
-        extras.putString("id", this.id);
-        extras.putString("worker", this.worker);
+        String name = (String) worker.get("name");
+        String payload = (String) worker.get("payload");
 
-        Intent broadcast = new Intent("DO_WORK");
-
-        broadcast.putExtras(extras);
-
-        BackgroundWorkerModule.context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                .emit(worker, Arguments.fromBundle(extras));
-
-        while(this.workflowResult.equals("running")) { sleep(100); }
-
-        Data outputData = new Data.Builder()
-                .putString("outputData", this.result)
-                .build();
-
-        switch (this.workflowResult) {
-            case "success": return Result.success(outputData);
-            default: return shouldRetry ? Result.retry() : Result.failure(outputData);
+        if(name==null) {
+            return Single.just(Result.failure());
         }
 
+        Bundle extras = new Bundle();
+        extras.putString("id", id);
+        if(payload!=null) extras.putString("payload",payload);
+
+        BackgroundWorkerModule.context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                .emit(name, Arguments.fromBundle(extras));
+
+        return Single.create(new SingleOnSubscribe<Result>() {
+            @Override
+            public void subscribe(final SingleEmitter<Result> emitter) throws Exception {
+                BroadcastReceiver receiver = new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        String value = intent.getStringExtra("value");
+                        String result = intent.getStringExtra("result");
+                        Data outputData = new Data.Builder()
+                                .putString("value", value)
+                                .build();
+                        switch (result) {
+                            case "success":
+                                emitter.onSuccess(Result.success(outputData));
+                                break;
+                            case "retry":
+                                emitter.onSuccess(Result.retry());
+                                break;
+                            default:
+                                emitter.onSuccess(Result.failure(outputData));
+                        }
+                    }
+                };
+                getApplicationContext().registerReceiver(receiver, new IntentFilter("result"));
+            }
+        });
     }
 }

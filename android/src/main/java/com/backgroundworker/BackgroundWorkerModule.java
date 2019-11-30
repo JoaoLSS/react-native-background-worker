@@ -19,6 +19,7 @@ import androidx.work.Constraints;
 import androidx.work.Data;
 import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.OneTimeWorkRequest;
+import androidx.work.Operation;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
@@ -36,159 +37,90 @@ import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import java.util.HashMap;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+
+import javax.annotation.Nonnull;
 
 public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
     static ReactApplicationContext context;
-    private final Handler handler = new Handler(Looper.getMainLooper());
-    private HashMap<String, Observer<WorkInfo>> observers = new HashMap<>();
-    private HashMap<String, ReadableMap> workers = new HashMap<>();
+    private HashMap<String, ReadableMap> queuedWorkers = new HashMap<>();
 
-    public BackgroundWorkerModule(ReactApplicationContext reactContext) {
+    BackgroundWorkerModule(ReactApplicationContext reactContext) {
         super(reactContext);
-        BackgroundWorkerModule.context = reactContext;
-        BroadcastReceiver receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                String worker = intent.getStringExtra("worker");
-                Bundle extras = intent.getExtras();
-                BackgroundWorkerModule.this.getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                        .emit(worker, extras == null ? null : Arguments.fromBundle(extras));
-            }
-        };
-        LocalBroadcastManager.getInstance(context).registerReceiver(receiver, new IntentFilter("DO-WORK"));
+        context = reactContext;
     }
 
+    @Nonnull
     @Override
     public String getName() {
         return "BackgroundWorker";
     }
 
     @ReactMethod
-    public void setWorker(ReadableMap worker) {
+    public void registerWorker(ReadableMap worker, Promise p) {
 
-        String name = worker.getString("name");
         String type = worker.getString("type");
+        String name = worker.getString("name");
 
-        this.workers.put(name, worker);
+        if(name == null || type == null) {
+            p.reject("ERROR", "missing worker info");
+            return;
+        }
 
-        if(type != null && name != null && type.equals("periodic")) {
+        if(type.equals("queued")) {
 
+            queuedWorkers.put(name, worker);
+            p.resolve(true);
+            return;
+
+        }
+        if(type.equals("periodic")) {
+
+            int repeatInterval = worker.getInt("repeatInterval");
             Constraints constraints = Parser.getConstraints(worker.getMap("constraints"));
 
-            PeriodicWorkRequest.Builder builder = new PeriodicWorkRequest.Builder(BackgroundWorker.class, 15, TimeUnit.MINUTES);
-            if(constraints != null) builder.setConstraints(constraints);
-
+            PeriodicWorkRequest.Builder builder = new PeriodicWorkRequest.Builder(BackgroundWorker.class, Math.max(15, repeatInterval), TimeUnit.MINUTES);
+            if(constraints!=null) builder.setConstraints(constraints);
             PeriodicWorkRequest request = builder.build();
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(name, ExistingPeriodicWorkPolicy.REPLACE, request);
+            p.resolve(request.getId().toString());
+            return;
 
         }
+        p.reject("ERROR","incompatible worker type");
 
     }
 
     @ReactMethod
-    public void result(String id, String result, String workflowResult) {
-        Intent intent = new Intent(id + "result");
-        intent.putExtra("result", result);
-        intent.putExtra("workflowResult", workflowResult);
-        LocalBroadcastManager.getInstance(this.getReactApplicationContext()).sendBroadcast(intent);
-    }
+    public void enqueue(String worker, String payload, Promise p) {
 
-    @ReactMethod
-    private void enqueue(ReadableMap work, Callback sendId) {
+        ReadableMap _worker = queuedWorkers.get(worker);
 
-        String worker = work.getString("worker");
-        ReadableMap _worker = workers.get(worker);
+        if(_worker==null) {
+            p.reject("ERROR", "worker not registered");
+            return;
+        }
 
-        if(_worker==null) return;
-        ReadableMap notification = _worker.getMap("notification");
-
-        if(notification==null) return;
         Data inputData = new Data.Builder()
-                .putAll(work.toHashMap())
-                .putString("title", notification.getString("title"))
-                .putString("text", notification.getString("text"))
+                .putAll(_worker.toHashMap())
+                .putString("payload", payload)
                 .build();
 
-        Constraints constraints = Parser.getConstraints(_worker.getMap("constraints"));
-        WorkRequest.Builder builder = new OneTimeWorkRequest.Builder(BackgroundWorker.class)
+        OneTimeWorkRequest.Builder builder = new OneTimeWorkRequest.Builder(BackgroundWorker.class)
                 .setInputData(inputData);
 
+        Constraints constraints = Parser.getConstraints(_worker.getMap("constraints"));
         if(constraints!=null) builder.setConstraints(constraints);
 
         WorkRequest request = builder.build();
-        String id = request.getId().toString();
-        sendId.invoke(id);
+
+        p.resolve(request.getId().toString());
+
         WorkManager.getInstance(context).enqueue(request);
 
-    }
-
-    @ReactMethod
-    public void cancelWorker(String id) {
-        UUID _id = UUID.fromString(id);
-        WorkManager.getInstance(context).cancelWorkById(_id);
-    }
-
-    @ReactMethod
-    public void workInfo(String id, Promise sendInfo) {
-        try {
-            WorkInfo info = WorkManager.getInstance(this.getReactApplicationContext()).getWorkInfoById(UUID.fromString(id)).get();
-            if(info == null) {
-                sendInfo.reject("404", "Work Not Found");
-                return;
-            }
-            WritableMap _info = Arguments.fromBundle(Parser.getWorkInfo(info));
-            sendInfo.resolve(_info);
-        }
-        catch(Exception e) {
-            sendInfo.reject(e);
-        }
-    }
-
-    @ReactMethod
-    public void registerListener(final String id) {
-        if(observers.containsKey(id)) return;
-        final LiveData<WorkInfo> data = WorkManager.getInstance(this.getReactApplicationContext()).getWorkInfoByIdLiveData(UUID.fromString(id));
-        final Observer<WorkInfo> observer = new Observer<WorkInfo>() {
-            @Override
-            public void onChanged(WorkInfo workInfo) {
-                context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                        .emit(id+"info", Arguments.fromBundle(Parser.getWorkInfo(workInfo)));
-            }
-        };
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                data.observeForever(observer);
-                observers.put(id, observer);
-            }
-        });
-        WorkInfo info = data.getValue();
-        if(info!=null) context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                .emit(id+"info", Arguments.fromBundle(Parser.getWorkInfo(info)));
-    }
-
-    @ReactMethod
-    public void removeListener(final String id) {
-        final Observer<WorkInfo> observer = observers.get(id);
-        if(observer==null) return;
-        final LiveData<WorkInfo> data = WorkManager.getInstance(this.getReactApplicationContext()).getWorkInfoByIdLiveData(UUID.fromString(id));
-        handler.post(new Runnable() {
-            @Override public void run() {
-                data.removeObserver(observer);
-            }
-        });
-    }
-
-    @ReactMethod
-    public void startHeadlessJS(ReadableMap work) {
-        Intent headlessJS = new Intent(BackgroundWorkerModule.this.getReactApplicationContext(), BackgroundWorkerService.class);
-        Bundle extras = Arguments.toBundle(work);
-        if(extras != null) headlessJS.putExtras(extras);
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) BackgroundWorkerModule.this.getReactApplicationContext().startForegroundService(headlessJS);
-        else BackgroundWorkerModule.this.getReactApplicationContext().startService(headlessJS);
     }
 
 }

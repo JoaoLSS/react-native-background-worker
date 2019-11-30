@@ -26,7 +26,7 @@ public class Parser {
 
     }
 
-    static public Constraints getConstraints(@Nullable  ReadableMap constraints) {
+    static Constraints getConstraints(@Nullable ReadableMap constraints) {
 
         if(constraints==null) return null;
 
@@ -34,14 +34,8 @@ public class Parser {
 
         final boolean requiresCharging      = constraints.hasKey("battery") && constraints.getString("battery").equals("charging");
         final boolean requiresDeviceIdle    = constraints.hasKey("idle"   ) && constraints.getBoolean("idle");
-        final boolean requiresStorageNotLow = constraints.hasKey("storage") && constraints.getBoolean("storage");
+        final boolean requiresStorageNotLow = constraints.hasKey("storage") && constraints.getString("storage").equals("notLow");
         final boolean requiresBatteryNotLow = constraints.hasKey("battery") && constraints.getString("battery").equals("notLow");
-
-        Log.d("networkType"             , networkType.toString());
-        Log.d("requiresCharging"        , requiresCharging      ? "true" : "false");
-        Log.d("requiresDeviceIdle"      , requiresDeviceIdle    ? "true" : "false");
-        Log.d("requiresStorageNotLow"   , requiresStorageNotLow ? "true" : "false");
-        Log.d("requiresBatteryNotLow"   , requiresBatteryNotLow ? "true" : "false");
 
         return new Constraints.Builder()
                 .setRequiredNetworkType(networkType)
