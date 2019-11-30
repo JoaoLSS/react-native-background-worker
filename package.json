@@ -25,24 +25,15 @@
   "readmeFilename": "README.md",
   "peerDependencies": {
     "react": "^16.8.1",
-    "react-native": ">=0.60.0 <1.0.x",
-    "redux": "^4.0.4",
-    "redux-persist": "^6.0.0",
-    "redux-persist-filesystem-storage": "^2.0.0"
+    "react-native": ">=0.60.0 <1.0.x"
   },
   "devDependencies": {
     "@types/react": "^16.9.2",
     "@types/react-native": "^0.60.13",
-    "@types/redux": "^3.6.0",
-    "@types/redux-persist": "^4.3.1",
     "react": "^16.8.3",
     "react-native": "^0.60.0"
   },
   "dependencies": {
-    "@types/reselect": "^2.2.0",
-    "cuid": "^2.1.6",
-    "performance-now": "^2.1.0",
-    "redux-persist-filesystem-storage": "^2.0.0",
-    "reselect": "^4.0.0"
+    "performance-now": "^2.1.0"
   }
 }
