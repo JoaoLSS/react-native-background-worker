@@ -4,7 +4,7 @@ interface GenericWorker<T extends "periodic"|"queued"> {
     type: T
     name: string,
     timeout?: number,
-    foregroundBehaviour?: "headlessTask" | "foreground",
+    foregroundBehaviour?: "headlessTask" | "foreground" | "blocking",
     constraints?: {
         network?: "connected" | "metered" | "notRoaming" | "unmetered" | "notRequired",
         battery?: "charging" | "notLow" | "notRequired",
@@ -33,9 +33,10 @@ const isPeriodicWorker = (worker: any): worker is PeriodicWorker<"periodic"> => 
 
 type Worker<P,V,T extends "queued"|"periodic"> = T extends "queued" ? QueuedWorker<P,V,T> : T extends "periodic" ? PeriodicWorker<T> : never
 
-function setWorker<T extends "queued"|"periodic",P=any,V=any>(worker: Worker<P,V,T>): T extends "periodic" ? Promise<String> : T extends "queued" ? Promise<true> : never {
+function setWorker<T extends "queued"|"periodic",P=any,V=any>(worker: Worker<P,V,T>): Promise<T extends "periodic" ? string:void> {
 
-    const { workflow, ..._worker } = worker
+    const { workflow, constraints, notification, ..._worker } = worker
+    const workerConfiguration = { repeatInterval: 15, timeout: 10, foregroundBehaviour: "blocking", ..._worker, ...notification }
 
     const work = async (data: { id: string, payload: string }) => {
         try {
@@ -57,15 +58,29 @@ function setWorker<T extends "queued"|"periodic",P=any,V=any>(worker: Worker<P,V
     AppRegistry.registerHeadlessTask(worker.name, () => work)
     NativeAppEventEmitter.addListener(worker.name, (data) => {
 
-        if(worker.foregroundBehaviour === "foreground" && AppState.currentState === "active") work(data)
-        else NativeModules.BackgroundWorker.startHeadlessTask({ ..._worker, ...data })
+        if(AppState.currentState==="active") {
+            if(workerConfiguration.foregroundBehaviour==="blocking") {
+                NativeModules.BackgroundWorker.result(data.id, JSON.stringify(null), "retry")
+                return
+            }
+            if(workerConfiguration.foregroundBehaviour==="foreground") {
+                work(data)
+                return
+            }
+        }
+        NativeModules.BackgroundWorker.startHeadlessTask({ ...workerConfiguration, ...data })
         
     })
 
-    return NativeModules.BackgroundWorker.registerWorker(_worker)
+    return NativeModules.BackgroundWorker.registerWorker(workerConfiguration,constraints||{})
 
 }
 
 function enqueue(work: { worker: string, payload: any }): Promise<string> {
     return NativeModules.BackgroundWorker.enqueue(work.worker, JSON.stringify(work.payload))
+}
+
+export default {
+    setWorker,
+    enqueue
 }

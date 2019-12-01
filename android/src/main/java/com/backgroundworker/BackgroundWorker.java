@@ -1,5 +1,6 @@
 package com.backgroundworker;
 
+import android.app.Application;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -13,8 +14,11 @@ import androidx.work.Data;
 import androidx.work.RxWorker;
 import androidx.work.WorkerParameters;
 
+import com.facebook.react.ReactInstanceManager;
+import com.facebook.react.ReactInstanceManagerBuilder;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.common.LifecycleState;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import java.util.HashMap;
@@ -35,20 +39,22 @@ public class BackgroundWorker extends RxWorker {
     public BackgroundWorker(@NonNull Context appContext, @NonNull WorkerParameters workerParams) {
         super(appContext, workerParams);
         worker = workerParams.getInputData().getKeyValueMap();
+        Log.d("BACKROUND-WORKER",worker.toString());
         id = workerParams.getId().toString();
     }
 
     @NonNull
     @Override
     public Single<Result> createWork() {
-        if(BackgroundWorkerModule.context==null) return Single.just(Result.retry());
+
+        if(BackgroundWorkerModule.context==null)
+            return Single.just(Result.retry());
 
         String name = (String) worker.get("name");
         String payload = (String) worker.get("payload");
 
-        if(name==null) {
+        if(name==null)
             return Single.just(Result.failure());
-        }
 
         Bundle extras = new Bundle();
         extras.putString("id", id);
@@ -80,7 +86,7 @@ public class BackgroundWorker extends RxWorker {
                         }
                     }
                 };
-                getApplicationContext().registerReceiver(receiver, new IntentFilter("result"));
+                LocalBroadcastManager.getInstance(BackgroundWorkerModule.context).registerReceiver(receiver,new IntentFilter(id+"result"));
             }
         });
     }

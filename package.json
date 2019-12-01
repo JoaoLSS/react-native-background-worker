@@ -32,8 +32,5 @@
     "@types/react-native": "^0.60.13",
     "react": "^16.8.3",
     "react-native": "^0.60.0"
-  },
-  "dependencies": {
-    "performance-now": "^2.1.0"
   }
 }

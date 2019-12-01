@@ -9,6 +9,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 import androidx.core.os.HandlerCompat;
@@ -35,6 +36,8 @@ import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
+import org.json.JSONObject;
+
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.Executor;
@@ -46,6 +49,7 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
     static ReactApplicationContext context;
     private HashMap<String, ReadableMap> queuedWorkers = new HashMap<>();
+    private HashMap<String, Constraints> queuedConstraints = new HashMap<>();
 
     BackgroundWorkerModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -59,7 +63,7 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void registerWorker(ReadableMap worker, Promise p) {
+    public void registerWorker(ReadableMap worker, ReadableMap constraints, Promise p) {
 
         String type = worker.getString("type");
         String name = worker.getString("name");
@@ -71,18 +75,28 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
         if(type.equals("queued")) {
 
+            Constraints _constraints = Parser.getConstraints(constraints);
+            if(_constraints!=null) queuedConstraints.put(name, _constraints);
+
             queuedWorkers.put(name, worker);
-            p.resolve(true);
+            p.resolve(null);
             return;
 
         }
         if(type.equals("periodic")) {
 
             int repeatInterval = worker.getInt("repeatInterval");
-            Constraints constraints = Parser.getConstraints(worker.getMap("constraints"));
+            Constraints _constraints = Parser.getConstraints(constraints);
 
             PeriodicWorkRequest.Builder builder = new PeriodicWorkRequest.Builder(BackgroundWorker.class, Math.max(15, repeatInterval), TimeUnit.MINUTES);
-            if(constraints!=null) builder.setConstraints(constraints);
+            if(_constraints!=null) builder.setConstraints(_constraints);
+
+            Data inputData = new Data.Builder()
+                    .putAll(worker.toHashMap())
+                    .build();
+
+            builder.setInputData(inputData);
+
             PeriodicWorkRequest request = builder.build();
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(name, ExistingPeriodicWorkPolicy.REPLACE, request);
@@ -98,6 +112,7 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
     public void enqueue(String worker, String payload, Promise p) {
 
         ReadableMap _worker = queuedWorkers.get(worker);
+        Constraints _constraints = queuedConstraints.get(worker);
 
         if(_worker==null) {
             p.reject("ERROR", "worker not registered");
@@ -112,8 +127,7 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
         OneTimeWorkRequest.Builder builder = new OneTimeWorkRequest.Builder(BackgroundWorker.class)
                 .setInputData(inputData);
 
-        Constraints constraints = Parser.getConstraints(_worker.getMap("constraints"));
-        if(constraints!=null) builder.setConstraints(constraints);
+        if(_constraints!=null) builder.setConstraints(_constraints);
 
         WorkRequest request = builder.build();
 
@@ -121,6 +135,24 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
 
         WorkManager.getInstance(context).enqueue(request);
 
+    }
+
+    @ReactMethod
+    public void startHeadlessTask(ReadableMap workConfiguration) {
+        Intent headlessIntent = new Intent(context, BackgroundWorkerService.class);
+        Bundle extras = Arguments.toBundle(workConfiguration);
+        if(extras!=null) headlessIntent.putExtras(extras);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O)
+            BackgroundWorkerModule.this.getReactApplicationContext().startForegroundService(headlessIntent);
+        else BackgroundWorkerModule.this.getReactApplicationContext().startService(headlessIntent);
+    }
+
+    @ReactMethod
+    public void result(String id, String value, String result) {
+        Intent intent = new Intent(id + "result");
+        intent.putExtra("result", result);
+        intent.putExtra("value", value);
+        LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
     }
 
 }
