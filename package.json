@@ -4,7 +4,6 @@
   "version": "0.0.1",
   "description": "Background worker that uses android WorkManager",
   "main": "index.ts",
-  "types": "*.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -14,7 +13,10 @@
     "baseUrl": "https://github.com/github_account/react-native-background-worker"
   },
   "keywords": [
-    "react-native"
+    "react-native",
+    "WorkManager",
+    "background",
+    "headlessTask"
   ],
   "author": {
     "name": "João Lucas Silveira Silva",
