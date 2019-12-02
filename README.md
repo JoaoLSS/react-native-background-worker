@@ -2,7 +2,7 @@
 
 ## Motivation
 
-The react native community has some nice tools to work with background tasks, like [react-native-background-task](https://github.com/jamesisaac/react-native-background-task) and [react-native-background-fetch](https://github.com/transistorsoft/react-native-background-fetch), but those often offers some problems, as lack of maintenance, skipped tasks and so on. At the same time I liked so much the power and flexibility of WorkManager that I thought it would be awesome to bring those advantages into react native background tasks. So this is primarily a wrapper for the android work manager, with support for constrains, notification, persistence and much more, everything from the native side. For now this is heavily based on android's work manager and the react-native's headlessTask, apple has realeased BGTaskScheduler recently and I'm planning to look on that, but I sincerely don't know if this module could have a simmetric implementation on the iOS side.
+The react native community has some nice tools to work with background tasks, like [react-native-background-task](https://github.com/jamesisaac/react-native-background-task) and [react-native-background-fetch](https://github.com/transistorsoft/react-native-background-fetch), but those often offers some problems, as lack of maintenance, skipped tasks and so on. At the same time I liked so much the power and flexibility of WorkManager that I thought it would be awesome to bring those advantages into react native background tasks. So this is primarily a wrapper for the android work manager, with support for constrains, notification, persistence and much more, everything from the native side. For now this is heavily based on android's work manager and the react-native's headlessTask. Apple has realeased BGTaskScheduler recently and I'm planning to look on that, but I sincerely don't know if this module could have a simmetric implementation on the iOS side.
 
 ## To Do
 
@@ -51,7 +51,7 @@ export let updaterId;
 
 // this is how to set a periodic worker
 async function setUpdater(repeatInterval) {
-    updaterId = await WorkManager.setWorker({
+    updaterId = await WorkManager.setWorker(/*periodic worker:*/{
         type: 'periodic',                                   // [REQUIRED] worker's type, could be 'periodic' or 'queue'.
         name: 'newsUpdater',                                // [REQUIRED] worker's name, remember to create a drawable with the
                                                             // same name to be displayed with the notification.
@@ -116,7 +116,7 @@ unsubscriber();
 
 ```
 
-this is periodic worker's type:
+the periodic worker object should assume this contract:
 
 ```typescript
 
@@ -159,7 +159,7 @@ class PlaylistView extends React.Component {
     state = { downloadId: undefined }
 
     componentDidMount() {
-        WorkManager.setWorker({
+        WorkManager.setWorker(/*queue worker:*/{
             type: 'queue',                                      // [REQUIRED] worker's type, could be 'periodic' or 'queue'.
             name: 'playlistDownloader',                         // [REQUIRED] worker's name, remember to create a drawable with the
                                                                 // same name to be displayed with the notification.
@@ -226,7 +226,7 @@ class AlbumView extends React.Component {
     uploadWorks = {}
 
     componentDidMount() {
-        WorkManager.setWorker({
+        WorkManager.setWorker(/*queue worker:*/{
             type: 'queue',                                          // [REQUIRED] worker's type, could be 'periodic' or 'queue'.
             name: 'photoUploader',                                  // [REQUIRED] worker's name, remember to create a drawable with the
                                                                     // same name to be displayed with the notification.
@@ -273,7 +273,7 @@ class AlbumView extends React.Component {
 
 ```
 
-this is queue worker's type:
+the queue worker object should assume a slightly different contract:
 
 ```typescript
 
