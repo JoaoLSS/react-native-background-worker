@@ -43,6 +43,12 @@ public class BackgroundWorker extends RxWorker {
         id = workerParams.getId().toString();
     }
 
+    /**
+     * We chose the RxWorker because we can listen to JS during the task,
+     * If the module context is destroyed, the app was closed hence we can't perform any task,
+     * so just return retry to work manager
+     * @return Single that listens to JS finishing the work
+     */
     @NonNull
     @Override
     public Single<Result> createWork() {
@@ -63,31 +69,28 @@ public class BackgroundWorker extends RxWorker {
         BackgroundWorkerModule.context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                 .emit(name, Arguments.fromBundle(extras));
 
-        return Single.create(new SingleOnSubscribe<Result>() {
-            @Override
-            public void subscribe(final SingleEmitter<Result> emitter) throws Exception {
-                BroadcastReceiver receiver = new BroadcastReceiver() {
-                    @Override
-                    public void onReceive(Context context, Intent intent) {
-                        String value = intent.getStringExtra("value");
-                        String result = intent.getStringExtra("result");
-                        Data outputData = new Data.Builder()
-                                .putString("value", value)
-                                .build();
-                        switch (result) {
-                            case "success":
-                                emitter.onSuccess(Result.success(outputData));
-                                break;
-                            case "retry":
-                                emitter.onSuccess(Result.retry());
-                                break;
-                            default:
-                                emitter.onSuccess(Result.failure(outputData));
-                        }
+        return Single.create(emitter -> {
+            BroadcastReceiver receiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    String value = intent.getStringExtra("value");
+                    String result = intent.getStringExtra("result");
+                    Data outputData = new Data.Builder()
+                            .putString("value", value)
+                            .build();
+                    switch (result) {
+                        case "success":
+                            emitter.onSuccess(Result.success(outputData));
+                            break;
+                        case "retry":
+                            emitter.onSuccess(Result.retry());
+                            break;
+                        default:
+                            emitter.onSuccess(Result.failure(outputData));
                     }
-                };
-                LocalBroadcastManager.getInstance(BackgroundWorkerModule.context).registerReceiver(receiver,new IntentFilter(id+"result"));
-            }
+                }
+            };
+            LocalBroadcastManager.getInstance(BackgroundWorkerModule.context).registerReceiver(receiver,new IntentFilter(id+"result"));
         });
     }
 }

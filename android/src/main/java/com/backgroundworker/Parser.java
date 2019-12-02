@@ -47,7 +47,7 @@ public class Parser {
 
     }
 
-    static private String getWorkState(WorkInfo.State state) {
+    private static String getWorkState(WorkInfo.State state) {
         switch (state) {
             case FAILED: return "failed";
             case BLOCKED: return "blocked";
@@ -64,8 +64,8 @@ public class Parser {
         Bundle _info = new Bundle();
 
         _info.putString("state", getWorkState(info.getState()));
-        _info.putInt("attempts", info.getRunAttemptCount());
-        _info.putString("outputData", info.getOutputData().getString("outputData"));
+        _info.putInt("attemptCount", info.getRunAttemptCount());
+        _info.putString("value", info.getOutputData().getString("value"));
 
         return _info;
     }

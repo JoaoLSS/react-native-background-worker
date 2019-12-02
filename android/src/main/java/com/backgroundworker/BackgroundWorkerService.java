@@ -19,8 +19,12 @@ import javax.annotation.Nullable;
 
 public class BackgroundWorkerService extends HeadlessJsTaskService {
 
-    static String TAG = "BG_SERVICE::";
-
+    /**
+     * The Headless task should start in foreground in recent versions of android and thus showing
+     * a notification, the intent should contain all the relevant information
+     * @param intent
+     * @return
+     */
     @Nullable
     @Override
     protected HeadlessJsTaskConfig getTaskConfig(Intent intent) {
@@ -40,7 +44,7 @@ public class BackgroundWorkerService extends HeadlessJsTaskService {
         int timeout = extras.getInt("timeout");
 
         String id = extras.getString("id");
-        
+
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
 
             NotificationChannel channel = new NotificationChannel(name, name, NotificationManager.IMPORTANCE_MIN);
