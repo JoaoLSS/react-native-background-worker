@@ -137,8 +137,8 @@ const anotherWorkInfo = enqueue("some payload")
 ```typescript
 setWorker: (worker) => Promise<string|void>
 ```
-Return a promise to set the worker, that will resolve in a string been the id for a periodic worker and nothhing for the queued worker
-the only argument is worker, this is an object that contains:
+Returns a promise that will resolve in a string been the id for a periodic worker and nothhing for the queued worker.
+The only argument is worker, this is an object that contains:
 ```typescript
 type:"periodic"|"queued"
 ```
@@ -212,7 +212,7 @@ info: (id: string) => Promise<{
     value: any,
 }>
 ```
-This method returns a promise that will resolve in the info for work with that match the id, the info contains the work's state, number of attempts and returned value.
+This method returns a promise that will resolve in the info for work with the given id, the info contains the work's state, number of attempts and returned value.
 
 #### addListener
 ```javascript
