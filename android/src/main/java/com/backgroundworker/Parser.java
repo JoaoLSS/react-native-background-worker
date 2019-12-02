@@ -1,10 +1,8 @@
 package com.backgroundworker;
 
 import android.os.Bundle;
-import android.util.Log;
 
 import androidx.work.Constraints;
-import androidx.work.Data;
 import androidx.work.NetworkType;
 import androidx.work.WorkInfo;
 

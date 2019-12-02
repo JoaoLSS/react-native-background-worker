@@ -6,13 +6,11 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 
 import com.facebook.react.HeadlessJsTaskService;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.jstasks.HeadlessJsTaskConfig;
 
-import java.util.ResourceBundle;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;

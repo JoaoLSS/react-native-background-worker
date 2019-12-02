@@ -1,6 +1,5 @@
 package com.backgroundworker;
 
-import android.app.Application;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -14,22 +13,12 @@ import androidx.work.Data;
 import androidx.work.RxWorker;
 import androidx.work.WorkerParameters;
 
-import com.facebook.react.ReactInstanceManager;
-import com.facebook.react.ReactInstanceManagerBuilder;
 import com.facebook.react.bridge.Arguments;
-import com.facebook.react.bridge.ReadableMap;
-import com.facebook.react.common.LifecycleState;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import io.reactivex.Single;
-import io.reactivex.SingleEmitter;
-import io.reactivex.SingleObserver;
-import io.reactivex.SingleOnSubscribe;
-
-import static android.os.SystemClock.sleep;
 
 public class BackgroundWorker extends RxWorker {
 
