@@ -32,7 +32,7 @@ The react native community has some nice tools to work with background tasks, li
 
 ## Basic Usage
 
-##### You should create a drawable with the same name as the worker for the notification, if you do not do that, the app can crash!
+### You should create a drawable with the same name as the worker for the notification, if you do not do that, the app can crash!
 
 ```javascript
 import bgWork, { useEnqueue, useWorker } from 'react-native-background-worker';
