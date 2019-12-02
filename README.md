@@ -178,7 +178,7 @@ constraints?: {
 ```
 constraints are used by the work manager to decide when to run a work, all defaults to "notRequired" or false.
 ```javascript
-	repeatInterval?: number
+repeatInterval?: number
 ```
 Used only by the periodic worker, specifies the amount, in minutes, the work manager should wait until starting it again. The minimum value is 15 and it defaults to 15.
 
