@@ -31,7 +31,7 @@ public class Parser {
         final NetworkType networkType = getNetworkType(constraints.hasKey("network") ? constraints.getString("network") : "notRequired");
 
         final boolean requiresCharging      = constraints.hasKey("battery") && constraints.getString("battery").equals("charging");
-        final boolean requiresDeviceIdle    = constraints.hasKey("idle"   ) && constraints.getBoolean("idle");
+        final boolean requiresDeviceIdle    = constraints.hasKey("idle"   ) && constraints.getString("idle").equals("idle");
         final boolean requiresStorageNotLow = constraints.hasKey("storage") && constraints.getString("storage").equals("notLow");
         final boolean requiresBatteryNotLow = constraints.hasKey("battery") && constraints.getString("battery").equals("notLow");
 

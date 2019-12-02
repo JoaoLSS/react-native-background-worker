@@ -2,7 +2,15 @@
 
 ## Motivation
 
-The react native community has some nice tools to work with background tasks, like [react-native-background-task](https://github.com/jamesisaac/react-native-background-task) and [react-native-background-fetch](https://github.com/transistorsoft/react-native-background-fetch), but those often offers some problems, as lack of maintenance, skipped tasks and so on. At the same time I liked so much the power and flexibility of WorkManager that I thought it would be awesome to bring those advantages into react native background tasks. So this is primarily a wrapper for the android work manager, with support for constrains, notification, persistence and much more, everything from the native side. For now this is heavily based on android's work manager and the react-native's headlessTask, apple has realeased BGTaskScheduler recently and I'm planning to look on that, but I sincerely don't know if this module could have a simmetric implementation on the iOS side
+The react native community has some nice tools to work with background tasks, like [react-native-background-task](https://github.com/jamesisaac/react-native-background-task) and [react-native-background-fetch](https://github.com/transistorsoft/react-native-background-fetch), but those often offers some problems, as lack of maintenance, skipped tasks and so on. At the same time I liked so much the power and flexibility of WorkManager that I thought it would be awesome to bring those advantages into react native background tasks. So this is primarily a wrapper for the android work manager, with support for constrains, notification, persistence and much more, everything from the native side. For now this is heavily based on android's work manager and the react-native's headlessTask, apple has realeased BGTaskScheduler recently and I'm planning to look on that, but I sincerely don't know if this module could have a simmetric implementation on the iOS side.
+
+## To Do
+
+- Next:
+    - Add Backoff options
+    - Add Notification actions
+- Some day:
+    - iOS implementation
 
 ## Getting started
 
@@ -28,220 +36,267 @@ The react native community has some nice tools to work with background tasks, li
   	```
       implementation project(':react-native-background-worker')
   	```
+# Usage
 
+## Periodic Worker
 
-## Basic Usage
-
-### You should create a drawable with the same name as the worker for the notification, if you do not do that, the app can crash!
+Let's say you are working on a news feed app, and want to update the news every 15 minutes when the app is in foreground and every 30 minutes in background, you also want to skip the task if the device is offline, here's how you can implement this using background-worker:
 
 ```javascript
-import bgWork, { useEnqueue, useWorker } from 'react-native-background-worker';
 
-// To Register a Periodic Worker
-const periodicId = await bgWork.setWorker({
-    type: "periodic",
-    name: "periodicWorker",
-    notification: {
-        title: "Periodic Worker",
-        text: "MyApp is doing some periodic work in background"
-    },
-    workflow: async () => {
-        //do work
-    }
-})
+import { AppState } from 'react-native';
+import WorkManager from 'react-native-background-worker';
 
-// To Register a Queued Worker
-await bgWork.setWorker({
-    type: "queued",
-    name: "queuedWorker",
-    notification: {
-        title: "Queued Worker",
-        text: "MyApp is doing some queued work in background"
-    },
-    workflow: async (payload: string) => {
-        //do work
-        return { result: "success", value: "some work has been done" }
-    }
-})
+export let updaterId;
 
-//To Enqueue some payload
-const payloadId = await bgWork.enqueue({
-    worker: "queuedWorker",
-    payload: "some payload"
-})
+// this is how to set a periodic worker
+async function setUpdater(repeatInterval) {
+    updaterId = await WorkManager.setWorker({
+        type: 'periodic',                                   // [REQUIRED] worker's type, could be 'periodic' or 'queue'.
+        name: 'newsUpdater',                                // [REQUIRED] worker's name, remember to create a drawable with the
+                                                            // same name to be displayed with the notification.
+        notification: {
+            title: 'Updating your news',                    // [REQUIRED] notification title.
+            text: 'Don`t worry, we will keep you fresh 😎', // [REQUIRED] notification text.
+        },
+        workflow: async () => {                             // [REQUIRED] the workflow this worker will perform.
 
-//To cancel enqueued payload or periodic workers
-await bgWork.cancel(payloadId)
+            const freshNews = await myNewsFactoryApi.getNewsForUser(userId)
+            someDataManager.save({ freshNews })
 
-//To get some work's state at any moment
-const periodicWorkerInfo = await bgWork.info(periodicId)
-
-//To add a listener to state changes
-const unsubscribe = bgWork.addListener(periodicId, (info) => console.log({ info }))
-
-//To unsubscribe later
-unsubscribe()
-
-/**
- * HOOKS!
- * 
- * This API provides two hooks, the first is useEnqueue, it enqueues a payload and returns its state,
- * the second is useWorker, if the worker is periodic, it will return the work'state, if the worker
- * is queued, it will return the useEnqueue hook, linked with the worker's name.
-*/
-
-//To enqueue a payload and watch to it's state
-const workInfo = useEnqueue({
-	worker: "queuedWorker",
-	payload: "some payload",
-})
-
-//To register a periodic worker and watch it's state
-const periodicWorkerInfo = useWorker({
-    type: "periodic",
-    name: "periodicWorker",
-    notification: {
-        title: "Periodic Worker",
-        text: "MyApp is doing some periodic work in background"
-    },
-    workflow: async () => {
-        //do work
-    }
-},"detach")
-
-//To register a periodic worker and receive a enqueue function
-const enqueue = useWorker({
-    type: "queued",
-    name: "queuedWorker",
-    notification: {
-        title: "Queued Worker",
-        text: "MyApp is doing some queued work in background"
-    },
-    workflow: async (payload: string) => {
-        //do work
-        return { result: "success", value: "some work has been done" }
-    }
-})
-
-//That can ben used later to enqueue payloads to the worker that was setted
-const anotherWorkInfo = enqueue("some payload")
-
-```
-
-## API
-
-### bgWork
-
-#### setWorker
-
-```typescript
-setWorker: (worker) => Promise<string|void>
-```
-Returns a promise that will resolve in a string been the id for a periodic worker and nothhing for the queued worker.
-The only argument is worker, this is an object that contains:
-```typescript
-type:"periodic"|"queued"
-```
-The type of the worker
-```typescript
-name:string
-```
-The name of the worker
-```typescript
-notification: {
-	title: string
-	text: string
+        },
+        timeout: 1,                                         // [OPTIONAL] the headless task timeout in minutes, defaults to 10.
+        foregroundBehaviour: 'foreground'                   // [OPTIONAL] the worker's behaviour when app is in foreground,
+                                                            // could be 'blocking','foreground' or 'headlessTask', since react is
+                                                            // very sensible to tasks that demand processing power, this default
+                                                            // to blocking.
+        constraints: {
+            network: 'connected',                           // [OPTIONAL] network constraint for this worker.
+            battery: 'notRequired',                         // [OPTIONAL] battery constraint for this worker.
+            storage: 'notRequired',                         // [OPTIONAL] storage constraint for this worker.
+            idle: 'notRequired',                            // [OPTIONAL] usage constraint for this worker.
+        },
+        repeatInterval,                                     // [OPTIONAL] used only with periodic workers, sets the time in minutes
+                                                            // the work manager will wait until launching this task again, minimum
+                                                            // is 15, defaults to 15.
+    });
 }
+
+//if you register two workers with the same name, one will replace the other,
+//so you can keep registering the same worker to change it's configuration
+AppState.addEventListener('change',(state) => {
+    switch(state) {
+        case 'active':
+            setUpdater(15);
+            break;
+        case 'background':
+            setUpdater(30);
+            break;
+    }
+});
+
+//once you setted the worker, you can manipulate it through the returned id
+export async function finalizeUpdater() {
+     await WorkManager.cancel(updaterId);
+}
+
+export async function updaterInfo() {
+    return await WorkManager.info(updaterId);
+}
+
+//And moreover in some component you can listen to this worker to know when it is executing
+const unsubscriber = WorkManager.addListener(updaterId,(info) => {
+    if(info.state==='running') {
+        //show the user some spinning thing
+    }
+});
+
+//and unsubscribe later
+unsubscriber();
+
 ```
-An object containing the title and text for the notification that will be displayed when the worker starts
+
+this is periodic worker's type:
+
+```typescript
+
+interface PeriodicWorker {
+    type: 'periodic'
+    name: string
+    notification: {
+        title: string
+        text: string
+    },
+    workflow: () => Promise<void>
+    timeout?: number
+    foregroundBehaviour?: 'headlessTask'|'foreground'|'blocking'
+    constraints?: {
+        network?: 'connected'|'metered'|'notRoaming'|'unmetered'|'notRequired'
+        battery?: 'charging'|'notLow'|'notRequired'
+        storage?: 'notLow'|'notRequired'
+        idle?: 'idle'|'notRequired'
+    },
+    repeatInterval?: number,
+}
+
+```
+
+## Queue Worker
+
+There's two main utilizations for this worker, obviously as a queue and as a one time worker.
+
+### One Time Worker
+
+One day you see yourself working on a music app, and one of the views you are working on is the playlist view, with one button allowing the user to download the entire playlist, but you only wanna do that if the device is connected to internet, has enough power and has space to that, and you want to continue the work aside of app state changes, how would you implement it? You could easily achieve this with background-worker:
+
 ```javascript
-workflow: 
-	() => Promise<void> //For periodic Worker
-	(payload: any) => Promise<{ result:"success"|"failure"|"retry", value: any }> //For queued Worker
+
+import React from 'react';
+import WorkManager from 'react-native-background-worker';
+
+class PlaylistView extends React.Component {
+
+    state = { downloadId: undefined }
+
+    componentDidMount() {
+        WorkManager.setWorker({
+            type: 'queue',                                      // [REQUIRED] worker's type, could be 'periodic' or 'queue'.
+            name: 'playlistDownloader',                         // [REQUIRED] worker's name, remember to create a drawable with the
+                                                                // same name to be displayed with the notification.
+            notification: {
+                title: 'Downloading your playlist',             // [REQUIRED] notification title.
+                text: 'You can start dancing already 🎶',       // [REQUIRED] notification text.
+            },
+            workflow: async () => {                             // [REQUIRED] the workflow this worker will perform.
+
+                try {
+                    const offlinePlaylist = await notSpotifyApi.downloadPlaylist(playlistId)
+                    someDataManager.save({ offlinePlaylist })
+                    return { result: 'success', value: { size: offlinePlaylist.size } }
+                }
+                catch(error) {
+                    return { result: 'retry', value: { error } }
+                }
+
+            },
+            timeout: 30,                                        // [OPTIONAL] the headless task timeout in minutes, defaults to 10.
+            foregroundBehaviour: 'headlessTask'                 // [OPTIONAL] the worker's behaviour when app is in foreground,
+                                                                // could be 'blocking','foreground' or 'headlessTask', since react is
+                                                                // very sensible to tasks that demand processing power, this default
+                                                                // to blocking.
+            constraints: {
+                network: 'unmetered',                           // [OPTIONAL] network constraint for this worker.
+                battery: 'notLow',                              // [OPTIONAL] battery constraint for this worker.
+                storage: 'notLow',                              // [OPTIONAL] storage constraint for this worker.
+                idle: 'notRequired',                            // [OPTIONAL] usage constraint for this worker.
+            }
+        })
+        .then(() => console.log(`downloader setted`))
+        .catch(() => console.log(`error setting downloader`))
+    }
+
+    onDowloadButtonPress() {
+        WorkManager.enqueue({ worker: 'playlistDownloader' })   // After the enqueue function is called, the work is registered with
+            .then((downloaderId) => setState({ downloaderId })) // work manager and it constraints are met, should start right away
+                                                                // not always though, since work is scheduled by the work manager
+    }
+
+    async downloadInfo() {
+        if(state.downloaderId) {
+            return await WorkManager.info(state.downloaderId)
+        }
+        else return Promise.reject()
+    }
+
+}
+
 ```
-The workflow to be performed by this worker
+
+### Queue Worker
+
+Now you are working in a photo backup service, and everytime a new photo is taken it should start uploading, here's how to implement using background-worker:
+
 ```javascript
-timeout?: number
+
+import React from 'react';
+import WorkManager from 'react-native-background-worker';
+
+class AlbumView extends React.Component {
+
+    uploadWorks = {}
+
+    componentDidMount() {
+        WorkManager.setWorker({
+            type: 'queue',                                          // [REQUIRED] worker's type, could be 'periodic' or 'queue'.
+            name: 'photoUploader',                                  // [REQUIRED] worker's name, remember to create a drawable with the
+                                                                    // same name to be displayed with the notification.
+            notification: {
+                title: 'Uploading your photos',                     // [REQUIRED] notification title.
+                text: 'We like to keep your memories with care 😁', // [REQUIRED] notification text.
+            },
+            workflow: async (payload: { uri }) => {                 // [REQUIRED] the workflow this worker will perform.
+
+                try {
+                    const data = await notGooglePhotosAPI.uploadPhoto(uri)
+                    someDataManager.save({ data })
+                    return { result: 'success', value: { url: data.url } }
+                }
+                catch(error) {
+                    return { result: 'retry', value: { error } }
+                }
+
+            },
+            timeout: 1,                                         // [OPTIONAL] the headless task timeout in minutes, defaults to 10.
+            foregroundBehaviour: 'headlessTask'                 // [OPTIONAL] the worker's behaviour when app is in foreground,
+                                                                // could be 'blocking','foreground' or 'headlessTask', since react is
+                                                                // very sensible to tasks that demand processing power, this default
+                                                                // to blocking.
+            constraints: {
+                network: 'unmetered',                           // [OPTIONAL] network constraint for this worker.
+                battery: 'notRequired',                         // [OPTIONAL] battery constraint for this worker.
+                storage: 'notRequired',                         // [OPTIONAL] storage constraint for this worker.
+                idle: 'notRequired',                            // [OPTIONAL] usage constraint for this worker.
+            }
+        })
+        .then(() => console.log(`uploader setted`))
+        .catch(() => console.log(`error setting uploader`))
+    }
+
+    uploadPhoto(uri) {
+        WorkManager.enqueue({
+            worker: 'photoUploader',
+            payload: { uri }
+        }).then((uploadId) => uploadWorks.push(uploadeId))
+    }
+
+}
+
 ```
-This is the timeout in minutes the headlessTask will have to conclude, defaults to 10
-```javascript
-foregroundBehaviour?: "headlessTask" | "foreground" | "blocking"
+
+this is queue worker's type:
+
+```typescript
+
+interface QueueWorker {
+    type: 'queue'
+    name: string
+    notification: {
+        title: string
+        text: string
+    },
+    workflow: (payload: any) => Promise<{ result:'success'|'failure'|'retry', value: any }>
+    timeout?: number
+    foregroundBehaviour?: 'headlessTask'|'foreground'|'blocking'
+    constraints?: {
+        network?: 'connected'|'metered'|'notRoaming'|'unmetered'|'notRequired'
+        battery?: 'charging'|'notLow'|'notRequired'
+        storage?: 'notLow'|'notRequired'
+        idle?: 'idle'|'notRequired'
+    },
+}
+
 ```
+
+### foregroundBehaviour
+
 This variable needs caution, it sets the behaviour of this worker when the app is in foreground. If this is set to headlessTask, the worker will start the headless service to execute the task, this could be necessary to long performing tasks that need to transition between app states, since in background async tasks tend to be a little unpredictable. It will also show the notification, since it is obliged to, this could be the reason why someone would choose the foreground mode, where the task is started as a normal async call, this will not show any notification, but could have an unpredictable behaviour if the app goes to background in the middle of the task. At last, the blocking behaviour is the default behaviour and, quoting the react native documentation, "This is to prevent developers from shooting themselves in the foot by doing a lot of work in a task and slowing the UI.", Since react is single threaded, the two other behaviours could make your UI sluggish, so be aware.
-```javascript
-constraints?: {
-    network?: "connected" | "metered" | "notRoaming" | "unmetered" | "notRequired",
-    battery?: "charging" | "notLow" | "notRequired",
-    storage?: "notLow" | "notRequired",
-    idle?: boolean,
-}
-```
-constraints are used by the work manager to decide when to run a work, all defaults to "notRequired" or false.
-```javascript
-repeatInterval?: number
-```
-Used only by the periodic worker, specifies the amount, in minutes, the work manager should wait until starting it again. The minimum value is 15 and it defaults to 15.
-
-#### enqueue
-
-```javascript
-enqueue: (work) => Promise<string>
-```
-Enqueues a work a returns a promise that will resolve into the work's id,
-the work parameter contains:
-```javascript
-worker:string
-```
-the name of the worker that will process this work.
-```javascript
-payload: any
-```
-the payload the worker will receive to do the job.
-
-#### cancel
-```javascript
-cancel: (id: string) => Promise<void>
-```
-Cancels a periodic worker or a payload enqueued to some worker, given it's id
-
-#### info
-```javascript
-info: (id: string) => Promise<{
-    state: "failed" | "blocked" | "running" | "enqueued" | "cancelled" | "succeeded" | "unknown",
-    attemptCount: number,
-    value: any,
-}>
-```
-This method returns a promise that will resolve in the info for work with the given id, the info contains the work's state, number of attempts and returned value.
-
-#### addListener
-```javascript
-addListener: (id: string, listener: (info: WorkInfo) => void) => () => void
-```
-This method adds a listener for the given work that accepts the same parameters returned by info and returns the unsubscribe function
-
-### HOOKS
-
-#### useEnqueue
-```javascript
-useEnqueue: (work) => WorkInfo
-```
-This hook accepts the same parameters as the enqueue function, but returns the WorkInfo as a state hook to be updated automatically
-
-#### useWorker
-```javascript
-useWorker: (worker, lifecycle?:"attached"|"detached") => WorkInfo|(payload: any) => WorkInfo 
-```
-this hook has two implementations, one for each worker type:
-
-##### Periodic Worker
-```javascript
-useWorker: (worker, lifecycle?:"attached"|"detached") => WorkInfo
-```
-when used to register a periodic worker, the worker's lifecycle could be chosen, if the lifecycle is setted to attached, the worker will be cancelled when the component is unmounted, else the worker will remain working, defaults to attached. The hook will return a state hook containing the work's info
-
-##### Queued Worker
-```javascript
-useWorker: (worker) => (payload: any) => WorkInfo
-```
-when used to register a queued worker, the hook will return a enqueue function that is linked with this worker and at each enqueue it returns the work's info as a state hook

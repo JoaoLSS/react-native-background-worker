@@ -1,7 +1,7 @@
 {
   "name": "react-native-background-worker",
   "title": "Background Worker",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "Background worker that uses android WorkManager",
   "main": "index.ts",
   "scripts": {
@@ -9,8 +9,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/github_account/react-native-background-worker.git",
-    "baseUrl": "https://github.com/github_account/react-native-background-worker"
+    "url": "git+https://github.com/JoaoLSS/react-native-background-worker.git",
+    "baseUrl": "https://github.com/JoaoLSS/react-native-background-worker"
   },
   "keywords": [
     "react-native",

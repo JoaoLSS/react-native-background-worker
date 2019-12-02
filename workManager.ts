@@ -1,6 +1,6 @@
 import { NativeModules, AppRegistry, AppState, NativeAppEventEmitter } from "react-native"
 
-interface GenericWorker<T extends "periodic"|"queued"> {
+interface GenericWorker<T extends "periodic"|"queue"> {
     type: T
     name: string,
     timeout?: number,
@@ -9,7 +9,7 @@ interface GenericWorker<T extends "periodic"|"queued"> {
         network?: "connected" | "metered" | "notRoaming" | "unmetered" | "notRequired",
         battery?: "charging" | "notLow" | "notRequired",
         storage?: "notLow" | "notRequired",
-        idle?: boolean,
+        idle?: "idle"|"notRequired",
     },
     notification: {
         title: string,
@@ -17,12 +17,12 @@ interface GenericWorker<T extends "periodic"|"queued"> {
     },
 }
 
-interface QueuedWorker<P,V,T extends "queued"> extends GenericWorker<T> {
+interface QueueWorker<P,V,T extends "queue"> extends GenericWorker<T> {
     workflow: (payload: P) => Promise<{ result: "success" | "failure" | "retry", value: V }>
     repeatInterval?: never,
 }
 
-export const isQueuedWorker = (worker: any): worker is QueuedWorker<any,any,"queued"> => worker.type && worker.type==="queued"
+export const isQueueWorker = (worker: any): worker is QueueWorker<any,any,"queue"> => worker.type && worker.type==="queue"
 
 interface PeriodicWorker<T extends "periodic"> extends GenericWorker<T> {
     workflow: () => Promise<void>,
@@ -31,7 +31,7 @@ interface PeriodicWorker<T extends "periodic"> extends GenericWorker<T> {
 
 export const isPeriodicWorker = (worker: any): worker is PeriodicWorker<"periodic"> => worker.type && worker.type==="periodic"
 
-export type Worker<P,V,T extends "queued"|"periodic"> = T extends "queued" ? QueuedWorker<P,V,T> : T extends "periodic" ? PeriodicWorker<T> : never
+export type Worker<P,V,T extends "queue"|"periodic"> = T extends "queue" ? QueueWorker<P,V,T> : T extends "periodic" ? PeriodicWorker<T> : never
 
 /**
  * Function used to schedule workers
@@ -39,7 +39,7 @@ export type Worker<P,V,T extends "queued"|"periodic"> = T extends "queued" ? Que
  * if the worker is queued, it`s information is stored on the native side because each enqueue is registered as a one time work request
  * @param worker the worker information to be scheduled
  */
-function setWorker<T extends "queued"|"periodic",P=any,V=any>(worker: Worker<P,V,T>): Promise<T extends "periodic" ? string:void> {
+function setWorker<T extends "queue"|"periodic",P=any,V=any>(worker: Worker<P,V,T>): Promise<T extends "periodic" ? string:void> {
 
     const { workflow, constraints, notification, ..._worker } = worker
     const workerConfiguration = { repeatInterval: 15, timeout: 10, foregroundBehaviour: "blocking", ..._worker, ...notification }
@@ -51,8 +51,8 @@ function setWorker<T extends "queued"|"periodic",P=any,V=any>(worker: Worker<P,V
                 await worker.workflow()
                 NativeModules.BackgroundWorker.result(data.id, JSON.stringify(null), "success")
             }
-            // if worker is queued, capture it`s return value to save it
-            else if(isQueuedWorker(worker)) {
+            // if worker is queue, capture it`s return value to save it
+            else if(isQueueWorker(worker)) {
                 const { result, value } = await worker.workflow(JSON.parse(data.payload))
                 NativeModules.BackgroundWorker.result(data.id, JSON.stringify(value), result)
             }
@@ -89,10 +89,10 @@ function setWorker<T extends "queued"|"periodic",P=any,V=any>(worker: Worker<P,V
 }
 
 /**
- * This function enqueue a payload to be processed by a registered queued worker
+ * This function enqueue a payload to be processed by a registered queue worker
  * @param work The worker name and payload to be scheduled
  */
-function enqueue(work: { worker: string, payload: any }): Promise<string> {
+function enqueue(work: { worker: string, payload?: any }): Promise<string> {
     return NativeModules.BackgroundWorker.enqueue(work.worker, JSON.stringify(work.payload))
 }
 
