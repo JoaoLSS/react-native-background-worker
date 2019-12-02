@@ -28,7 +28,6 @@ public class BackgroundWorker extends RxWorker {
     public BackgroundWorker(@NonNull Context appContext, @NonNull WorkerParameters workerParams) {
         super(appContext, workerParams);
         worker = workerParams.getInputData().getKeyValueMap();
-        Log.d("BACKROUND-WORKER",worker.toString());
         id = workerParams.getId().toString();
     }
 
