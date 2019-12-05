@@ -81,7 +81,7 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
             return;
         }
 
-        if(type.equals("queued")) {
+        if(type.equals("queue")) {
 
             Constraints _constraints = Parser.getConstraints(constraints);
             if(_constraints!=null) queuedConstraints.put(name, _constraints);
