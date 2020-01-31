@@ -1,2 +1,2 @@
-export { default } from "./workManager"
+export { default, WorkInfo } from "./workManager"
 // export * from "./hooks"
