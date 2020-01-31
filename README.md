@@ -8,7 +8,7 @@ The react native community has some nice tools to work with background tasks, li
 
 WorkManager offers a lot of advantages:
 - Native support for contrains
-- Native support for task parsistence
+- Native support for task persistence
 - Native support for data persistence
 - Smart schedule based on device state
 
