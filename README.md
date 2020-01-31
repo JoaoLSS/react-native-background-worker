@@ -2,13 +2,31 @@
 
 ## Motivation
 
-The react native community has some nice tools to work with background tasks, like [react-native-background-task](https://github.com/jamesisaac/react-native-background-task) and [react-native-background-fetch](https://github.com/transistorsoft/react-native-background-fetch), but those often offers some problems, as lack of maintenance, skipped tasks and so on. At the same time I liked so much the power and flexibility of WorkManager that I thought it would be awesome to bring those advantages into react native background tasks. So this is primarily a wrapper for the android work manager, with support for constrains, notification, persistence and much more, everything from the native side. For now this is heavily based on android's work manager and the react-native's headlessTask. Apple has realeased BGTaskScheduler recently and I'm planning to look on that, but I sincerely don't know if this module could have a simmetric implementation on the iOS side.
+The react native community has some nice tools to work with background tasks, like [react-native-background-task](https://github.com/jamesisaac/react-native-background-task) and [react-native-background-fetch](https://github.com/transistorsoft/react-native-background-fetch), but those often offers some problems, as lack of maintenance, skipped tasks and so on. There is also [react-native-background-job](https://github.com/vikeri/react-native-background-job), but google is [deprecating](https://github.com/firebase/firebase-jobdispatcher-android) the firebase-job-dispatcher in favor of WorkManager's API. At the same time I liked so much the power and flexibility of WorkManager that I thought it would be awesome to bring those advantages into react native background tasks. So this is primarily a wrapper for the android work manager, with support for constrains, notification, persistence and much more, everything from the native side. For now this is heavily based on android's work manager and the react-native's headlessTask. Apple has realeased BGTaskScheduler recently and I'm planning to look on that, but I sincerely don't know if this module could have a simmetric implementation on the iOS side.
+
+## Advantages
+
+WorkManager offers a lot of advantages:
+- Native support for contrains
+- Native support for task parsistence
+- Native support for data persistence
+- Smart schedule based on device state
+
+If you want to know more see the WorkManager [documentation](https://developer.android.com/topic/libraries/architecture/workmanager)
+
+## Changelog
+
+- 0.0.5:
+    - Bugfixes:
+        - Works were not been unregistered upon new registration, causing it to be called multiple times.
+        - Unsubscription could crash the app
 
 ## To Do
 
 - Next:
     - Add Backoff options
     - Add Notification actions
+    - Add Notification progress
 - Some day:
     - iOS implementation
 
@@ -25,8 +43,8 @@ The react native community has some nice tools to work with background tasks, li
 #### Android
 
 1. Open up `android/app/src/main/java/[...]/MainApplication.java`
-  - Add `import com.reactlibrary.BackgroundWorkerPackage;` to the imports at the top of the file
-  - Add `new BackgroundWorkerPackage()` to the list returned by the `getPackages()` method
+  - Add `import com.backgroundworker;` to the imports at the top of the file
+  - Add `new BackgroundWorkerPackage(reactContext)` to the list returned by the `getPackages()` method
 2. Append the following lines to `android/settings.gradle`:
   	```
   	include ':react-native-background-worker'
