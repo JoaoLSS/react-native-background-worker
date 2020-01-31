@@ -18,7 +18,7 @@ If you want to know more see the WorkManager [documentation](https://developer.a
 
 - 0.0.5:
     - Bugfixes:
-        - Works were not been unregistered upon new registration, causing it to be called multiple times.
+        - Works were not been unregistered upon new registration, causing them to be called multiple times.
         - Unsubscription could crash the app
 
 ## To Do
