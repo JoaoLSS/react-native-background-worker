@@ -56,6 +56,10 @@ If you want to know more see the WorkManager [documentation](https://developer.a
   	```
 # Usage
 
+## Examples
+
+- [PeriodicWorker](https://github.com/JoaoLSS/react-native-background-worker/tree/PeriodicExample)
+
 ## Periodic Worker
 
 Let's say you are working on a news feed app, and want to update the news every 15 minutes when the app is in foreground and every 30 minutes in background, you also want to skip the task if the device is offline, here's how you can implement this using background-worker:
