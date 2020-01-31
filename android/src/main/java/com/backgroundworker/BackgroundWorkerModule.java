@@ -228,7 +228,7 @@ public class BackgroundWorkerModule extends ReactContextBaseJavaModule {
         final LiveData<WorkInfo> data = WorkManager.getInstance(context).getWorkInfoByIdLiveData(UUID.fromString(id));
 
         final Observer<WorkInfo> listener = workInfo -> {
-            assert workInfo != null;
+            if (workInfo == null) return;
             context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                     .emit(id+"info", Arguments.fromBundle(Parser.getWorkInfo(workInfo)));
         };
