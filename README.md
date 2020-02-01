@@ -134,7 +134,7 @@ WorkManager.setWorker({
         the worflow to be performed by the queue worker, it will receive the enqueued payload and should return an object containing the result, which could be
         'success','failure' or 'retry' (in that case the worker will be reescheduled with the same payload), and optionaly a result value to be stored.
 
-- timeout [`'number'`][optional]:
+- timeout [`number`][optional]:
 
     the timeout in minutes for the HeadlessTask, the maximum value is 10, it defaults to 10.
 
