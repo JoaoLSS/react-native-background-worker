@@ -196,3 +196,51 @@ this method is used only for queue workers
 - returns:
 
     this method returns a promise that will resolve into the work's id for this payload, or it will reject if the payload could not be enqueued.
+
+### cancel
+
+```typescript
+WorkManager.cancel(id: string) => Promise<void>
+```
+
+this method is used to cancel a worker. Note that if the worker is already running it will not stop.
+
+- id [`string`]:
+
+    the id returned by setWorker or enqueue.
+
+- returns:
+
+    this method returns a promise that resolves if the worker has been cancelled or rejects otherwise.
+
+### info
+
+```typescript
+    WorkManager.info(id: string) => Promise<{
+        state: 'failed'|'blocked'|'running'|'enqueued'|'cancelled'|'succeeded'|'unknown'
+        attemptCount: number
+        value: any
+    }>
+```
+
+this method is used to fetch the workers info
+
+- id [`string`]:
+
+    the id returned by setWorker or enqueue.
+
+- returns:
+
+    this returns a promise that will reject if the worker info is not found or resolve with the following result:
+
+    - state [`'failed'|'blocked'|'running'|'enqueued'|'cancelled'|'succeeded'|'unknown'`]:
+
+    Worker's state, if the worker is queue it will assume any of these states, if it is periodic it will never be 'failed' or 'succeeded'.
+
+    - attemptCount [`number`]:
+
+    This will appear only if the worker is queue. It shows how many times the worker attempted to process the payload attached to this id.
+
+    - value [`any`]:
+
+    This is also used only with the queue worker, it shows what was the returning value for this payload if it was already processed.
