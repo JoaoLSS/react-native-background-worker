@@ -107,20 +107,24 @@ WorkManager.setWorker({
 })
 ```
 
-- type ['periodic'|'queue']:
+- type [`'periodic'|'queue'`]:
     Worker type
 
-- name [string]:
+- name [`string`]:
     Worker name, remember to create a notification icon drawable with the same name to be used on the notification.
 
 - notification:
-    - title [string]:
+    - title [`string`]:
+
         the title to be displayed on the notification
-    - text [string]:
+
+    - text [`string`]:
+
         the text to be displayed on the notification
 
+
 - workflow:
-    - periodic [() => Promise<void>]:
+    - periodic [`() => Promise<void>`]:
 
 ### foregroundBehaviour
 
