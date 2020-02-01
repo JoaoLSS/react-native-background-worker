@@ -12,7 +12,7 @@
   "dependencies": {
     "react": "16.9.0",
     "react-native": "0.61.5",
-    "react-native-background-worker": "https://github.com/JoaoLSS/react-native-background-worker#dev"
+    "react-native-background-worker": "0.0.5"
   },
   "devDependencies": {
     "@babel/core": "^7.8.4",
