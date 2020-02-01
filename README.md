@@ -244,3 +244,30 @@ this method is used to fetch the workers info
     - value [`any`]:
 
     This is also used only with the queue worker, it shows what was the returning value for this payload if it was already processed.
+
+### addListener
+
+```typescript
+    WorkManager.addListener(
+        id: string,
+        callback: ({
+            state: 'failed'|'blocked'|'running'|'enqueued'|'cancelled'|'succeeded'|'unknown'
+            attemptCount: number
+            value: any
+        }) => void
+    ) => () => void
+```
+
+this adds a listener to changes on worker's state.
+
+- id [`string`]:
+
+    the id returned by setWorker or enqueue.
+
+- callback[`({ state, attemptCount, value }) => void`]:
+
+    the callback which will receive the same information returned by the info method, once there's a change on worker's state.
+
+- returns:
+
+    this returns a method to unsubscribe the listener.
