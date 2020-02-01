@@ -108,24 +108,63 @@ WorkManager.setWorker({
 ```
 
 - type [`'periodic'|'queue'`]:
-    Worker type
+
+    Worker type.
 
 - name [`string`]:
+
     Worker name, remember to create a notification icon drawable with the same name to be used on the notification.
 
 - notification:
     - title [`string`]:
 
-        the title to be displayed on the notification
+        the title to be displayed on the notification.
 
     - text [`string`]:
 
-        the text to be displayed on the notification
-
+        the text to be displayed on the notification.
 
 - workflow:
     - periodic [`() => Promise<void>`]:
 
-### foregroundBehaviour
+        the workflow to be perfomerd by the periodic worker, it doesn't receive anything and should return nothing.
 
-This variable needs caution, it sets the behaviour of this worker when the app is in foreground. If this is set to headlessTask, the worker will start the headless service to execute the task, this could be necessary to long performing tasks that need to transition between app states, since in background async tasks tend to be a little unpredictable. It will also show the notification, since it is obliged to, this could be the reason why someone would choose the foreground mode, where the task is started as a normal async call, this will not show any notification, but could have an unpredictable behaviour if the app goes to background in the middle of the task. At last, the blocking behaviour is the default behaviour and, quoting the react native documentation, "This is to prevent developers from shooting themselves in the foot by doing a lot of work in a task and slowing the UI.", Since react is single threaded, the two other behaviours could make your UI sluggish, so be aware.
+    - queue [`(payload: any) => Promise<{ result: 'success'|'failure'|'retry', value: any }>`]:
+
+        the worflow to be performed by the queue worker, it will receive the enqueued payload and should return an object containing the result, which could be
+        'success','failure' or 'retry' (in that case the worker will be reescheduled with the same payload), and optionaly a result value to be stored.
+
+- timeout [`'number'`][optional]:
+
+    the timeout in minutes for the HeadlessTask, the maximum value is 10, it defaults to 10.
+
+- foregroundBehaviour [`'blocking'|'foreground'|'headlessTask'`][optional]:
+
+    !!CAUTION!!
+
+    This variable sets the worker's behaviour when the app is in foreground. If this is set to headlessTask, the worker will start the headless service to execute the task, this could be necessary to long performing tasks that need to transition between app states, since in background async tasks tend to be a little unpredictable. It will also show the notification, since it is obliged to, this could be the reason why someone would choose the foreground mode, where the task is started as a normal async call, this will not show any notification, but could have an unpredictable behaviour if the app goes to background in the middle of the task. At last, the blocking behaviour is the default behaviour and, [quoting](https://facebook.github.io/react-native/docs/headless-js-android#caveats) the react native documentation, "This is to prevent developers from shooting themselves in the foot by doing a lot of work in a task and slowing the UI.", Since react is single threaded, the two other behaviours could make your UI sluggish, so be aware.
+
+- constraints [optional]:
+
+    WorkManager's constraints, to know more see the [documentation](https://developer.android.com/reference/androidx/work/Constraints.html).
+
+    - network [`'connected'|'metered'|'notRoaming'|'unmetered'|'notRequired'`][optional]:
+
+        worker constraint concerning network. Defaults to 'notRequired'.
+
+    - battery [`'charging'|'notLow'|'notRequired'`][optional]:
+
+        worker constraint concerning battery. Defaults to 'notRequired'.
+
+    - storage [`'notLow'|'notRequired'`][optional]:
+
+        worker constraint concerning storage. Defaults to 'notRequired'.
+
+    - idle [`'idle'|'notRequired'`][optional]:
+
+        worker constraint concerning the device state. Defaults to 'notRequired'.
+
+- repeatInterval [`number`][optional][only for periodic worker]:
+
+    the time workmanager should wait to call the worker again in minutes. The minimum value is 15, defaults to 15.
+
