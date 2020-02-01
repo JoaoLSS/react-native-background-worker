@@ -1,4 +1,4 @@
-import { NativeModules, AppRegistry, AppState, NativeAppEventEmitter } from "react-native"
+import { NativeModules, AppRegistry, AppState, NativeAppEventEmitter, EmitterSubscription } from "react-native"
 
 interface GenericWorker<T extends "periodic"|"queue"> {
     type: T
@@ -33,6 +33,8 @@ export const isPeriodicWorker = (worker: any): worker is PeriodicWorker<"periodi
 
 export type Worker<P,V,T extends "queue"|"periodic"> = T extends "queue" ? QueueWorker<P,V,T> : T extends "periodic" ? PeriodicWorker<T> : never
 
+const registeredWorkers: Map<string, EmitterSubscription> = new Map();
+
 /**
  * Function used to schedule workers
  * If the worker is periodic, it will be registered right away and should start ASAP,
@@ -63,8 +65,13 @@ function setWorker<T extends "queue"|"periodic",P=any,V=any>(worker: Worker<P,V,
         }
     }
 
+    if(registeredWorkers.has(worker.name)) {
+        registeredWorkers.get(worker.name)?.remove()
+        registeredWorkers.delete(worker.name)
+    }
+    
     AppRegistry.registerHeadlessTask(worker.name, () => work)
-    NativeAppEventEmitter.addListener(worker.name, (data) => {
+    const subscription = NativeAppEventEmitter.addListener(worker.name, (data) => {
 
         // if the app is in foreground we should see for the foreground behaviour
         // if the behaviour is blocking, task is blocked and is scheduled to retry
@@ -83,6 +90,8 @@ function setWorker<T extends "queue"|"periodic",P=any,V=any>(worker: Worker<P,V,
         NativeModules.BackgroundWorker.startHeadlessTask({ ...workerConfiguration, ...data })
         
     })
+
+    registeredWorkers.set(worker.name, subscription)
 
     return NativeModules.BackgroundWorker.registerWorker(workerConfiguration,constraints||{})
 

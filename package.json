@@ -1,7 +1,7 @@
 {
   "name": "react-native-background-worker",
   "title": "Background Worker",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "description": "Background worker that uses android WorkManager",
   "main": "index.ts",
   "scripts": {
