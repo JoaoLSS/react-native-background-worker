@@ -276,5 +276,6 @@ this adds a listener to changes on worker's state.
 ## FAQ
 
 - "I keep receiving the warning `registerHeadlessTask or registerCancellableHeadlessTask called multiple times for same key '${taskKey}'`, is there a problem?
+    
     No, this warning is [here](https://github.com/facebook/react-native/blob/ff3b839e9a5a6c9e398a1327cde6dd49a3593092/Libraries/ReactNative/AppRegistry.js#L237),
     where you can see that the task providers are stored in a set, and there's no way to delete them, so react is just complaining about the fact that we are overwriting it.
