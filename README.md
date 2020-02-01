@@ -7,7 +7,7 @@ The react native community has some nice tools to work with background tasks, li
 ## Advantages
 
 WorkManager offers a lot of advantages:
-- Native support for contrains
+- Native support for constraints
 - Native support for task persistence
 - Native support for data persistence
 - Smart schedule based on device state
@@ -54,9 +54,9 @@ If you want to know more see the WorkManager [documentation](https://developer.a
   	```
       implementation project(':react-native-background-worker')
   	```
-# Usage
+## Usage
 
-## Simple Usage
+### Simple Usage
 
 ```javascript
 
@@ -80,7 +80,8 @@ workerId = await WorkManager.setWorker({
 
 ## Examples
 
-- [PeriodicWorker](https://github.com/JoaoLSS/react-native-background-worker/tree/PeriodicExample)
+- [PeriodicWorker](https://github.com/JoaoLSS/react-native-background-worker/tree/master/examples/periodic)
+- [QueueWorker](https://github.com/JoaoLSS/react-native-background-worker/tree/master/examples/queue)
 
 ## API
 
