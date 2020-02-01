@@ -18,7 +18,7 @@ If you want to know more see the WorkManager [documentation](https://developer.a
 
 - 0.0.5:
     - Bugfixes:
-        - Works were not been unregistered upon new registration, causing them to be called multiple times.
+        - Workers were not been unregistered upon new registration, causing them to be called multiple times.
         - Unsubscription could crash the app
 
 ## To Do
@@ -104,7 +104,7 @@ WorkManager.setWorker({
         idle ?: 'idle'|'notRequired'
     }
     repeatInterval ?: number
-})
+}) => Promise<void|string>
 ```
 
 - type [`'periodic'|'queue'`]:
@@ -168,3 +168,31 @@ WorkManager.setWorker({
 
     the time workmanager should wait to call the worker again in minutes. The minimum value is 15, defaults to 15.
 
+- returns:
+
+    the setWorker method returns a promise that will resolve with the worker's id in case of periodic or void in case of queue, or it will reject if the
+    worker could not be registered.
+
+### enqueue
+
+```typescript
+WorkManager.enqueue({
+    worker: string
+    payload ?: any
+}) => Promise<string>
+```
+
+this method is used only for queue workers
+
+- worker [`string`]:
+
+    the name of the worker that will work upon this payload, remember to register said worker before calling enqueue.
+
+- payload [`any`][optional]:
+
+    the payload to be processed by the worker. This is optional because you can create a queue worker that receives nothing. THE PAYLOAD HAS TO MATCH
+    THE TYPE WORKER IS EXPECTING, otherwise your worker will fail.
+
+- returns:
+
+    this method returns a promise that will resolve into the work's id for this payload, or it will reject if the payload could not be enqueued.
