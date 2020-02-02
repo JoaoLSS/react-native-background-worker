@@ -10,7 +10,7 @@ const data = [];
 async function setUpdater(repeatInterval) {
   const updaterId = await WorkManager.setWorker(/*periodic worker:*/{
       type: 'periodic',                                   // [REQUIRED] worker's type, could be 'periodic' or 'queue'.
-      name: 'newsUpdater',                                // [REQUIRED] worker's name, remember to create a drawable with the
+      name: 'news_updater',                                // [REQUIRED] worker's name, remember to create a drawable with the
                                                           // same name to be displayed with the notification.
       notification: {
           title: 'Updating your news',                    // [REQUIRED] notification title.
