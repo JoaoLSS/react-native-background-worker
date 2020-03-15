@@ -1111,9 +1111,9 @@ acorn-walk@^6.0.1:
   integrity sha512-7evsyfH1cLOCdAzZAd43Cic04yKydNx0cF+7tiA19p1XnLLPU4dpCQOqpjqwokFe//vS0QqfqqjCS2JkiIs0cA==
 
 acorn@^5.5.3:
-  version "5.7.3"
-  resolved "https://registry.yarnpkg.com/acorn/-/acorn-5.7.3.tgz#67aa231bf8812974b85235a96771eb6bd07ea279"
-  integrity sha512-T/zvzYRfbVojPWahDsE5evJdHb3oJoQfFbsrKM7w5Zcs++Tr257tia3BmMP8XYVjp1S9RZXQMh7gao96BlqZOw==
+  version "5.7.4"
+  resolved "https://registry.yarnpkg.com/acorn/-/acorn-5.7.4.tgz#3e8d8a9947d0599a1796d10225d7432f4a4acf5e"
+  integrity sha512-1D++VG7BhrtvQpNbBzovKNc1FLGGEE/oGe7b9xJm/RFHMBeUaUGpluV9RLjZa47YFdPcDAenEYuq9pQPcMdLJg==
 
 acorn@^6.0.1:
   version "6.4.0"
@@ -5000,9 +5000,10 @@ react-is@^16.8.1, react-is@^16.8.4, react-is@^16.9.0:
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-16.12.0.tgz#2cc0fe0fba742d97fd527c42a13bec4eeb06241c"
   integrity sha512-rPCkf/mWBtKc97aLL9/txD8DZdemK0vkA3JMLShjlJB3Pj3s+lpf1KaBzMfQrAmhMQB0n1cU/SUGgKKBCe837Q==
 
-"react-native-background-worker@https://github.com/JoaoLSS/react-native-background-worker#dev":
-  version "0.0.3"
-  resolved "https://github.com/JoaoLSS/react-native-background-worker#7887973eb5903286721c6e98a248770636c044cd"
+react-native-background-worker@0.0.5:
+  version "0.0.5"
+  resolved "https://registry.yarnpkg.com/react-native-background-worker/-/react-native-background-worker-0.0.5.tgz#7423f68f72bb329695b13f688c9dd31f77dd9de3"
+  integrity sha512-wygg1Eb6oVZiOUivLPxwBWgk4eY9XwuZfR7LbkhATNkKmXvgB7cX5vGI6+2Zqmj4vQb/3gBIMi6/CoO8P2D3zw==
 
 react-native@0.61.5:
   version "0.61.5"
